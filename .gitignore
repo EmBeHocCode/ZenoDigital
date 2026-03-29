@@ -1,0 +1,20 @@
+.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Runtime temp files
+tmp_*
+*.log
+
+# Session / cache / local AI runtime state
+storage/sessions/
+storage/cli-sessions/
+storage/admin-ai/cache/
+storage/admin-ai/progress/
+
+# User uploads / generated media
+public/uploads/*
+!public/uploads/.gitkeep
+!public/uploads/.htaccess

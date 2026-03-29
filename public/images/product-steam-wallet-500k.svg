@@ -1,0 +1,86 @@
+<svg width="320" height="240" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgWallet" x1="56" y1="28" x2="258" y2="198" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3F9FF"/>
+      <stop offset="1" stop-color="#E7F1FF"/>
+    </linearGradient>
+    <linearGradient id="slabTop" x1="76" y1="116" x2="234" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#526B9F"/>
+      <stop offset="1" stop-color="#364E84"/>
+    </linearGradient>
+    <linearGradient id="slabSide" x1="70" y1="124" x2="155" y2="175" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CBD8F4"/>
+      <stop offset="1" stop-color="#AFC0E8"/>
+    </linearGradient>
+    <linearGradient id="slabFront" x1="155" y1="124" x2="240" y2="175" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDFEFF"/>
+      <stop offset="1" stop-color="#E9EEF8"/>
+    </linearGradient>
+    <linearGradient id="walletFront" x1="132" y1="48" x2="220" y2="142" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7FD4FF"/>
+      <stop offset="1" stop-color="#2F8EFF"/>
+    </linearGradient>
+    <linearGradient id="walletSide" x1="110" y1="58" x2="146" y2="138" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5EA8FF"/>
+      <stop offset="1" stop-color="#3564D8"/>
+    </linearGradient>
+    <linearGradient id="walletTop" x1="112" y1="40" x2="196" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A6E4FF"/>
+      <stop offset="1" stop-color="#6CB7FF"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D9EBFF"/>
+    </linearGradient>
+    <filter id="softShadow" x="42" y="26" width="238" height="180" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#264B9F" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="320" height="240" rx="28" fill="url(#bgWallet)"/>
+  <ellipse cx="161" cy="190" rx="102" ry="18" fill="#D9E6FB"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M81 114L164 74L239 114L157 155L81 114Z" fill="url(#slabTop)"/>
+    <path d="M81 114V143L157 184V155L81 114Z" fill="url(#slabSide)"/>
+    <path d="M239 114V143L157 184V155L239 114Z" fill="url(#slabFront)"/>
+
+    <path d="M111 58L161 36L221 58V138L162 161L111 136V58Z" fill="url(#walletFront)"/>
+    <path d="M111 58L90 70V146L111 136V58Z" fill="url(#walletSide)"/>
+    <path d="M111 58L161 36L141 48L90 70L111 58Z" fill="url(#walletTop)"/>
+    <path d="M161 36L221 58L201 70L141 48L161 36Z" fill="#9AD9FF"/>
+
+    <rect x="128" y="54" width="32" height="57" rx="5" fill="#EEF8FF" fill-opacity="0.96"/>
+    <rect x="133" y="61" width="22" height="18" rx="3" fill="#CFE7FF"/>
+    <path d="M147 69C147 67.34 145.66 66 144 66C142.34 66 141 67.34 141 69C141 70.66 142.34 72 144 72C145.66 72 147 70.66 147 69Z" fill="#6DAFFF"/>
+    <path d="M139 88H149" stroke="#5C8EE8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M139 95H152" stroke="#B9D8FF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M139 102H150" stroke="#B9D8FF" stroke-width="3" stroke-linecap="round"/>
+
+    <path d="M169 73L194 62L194 121L169 131V73Z" fill="#E5F3FF"/>
+    <path d="M143 84L169 73V131L143 120V84Z" fill="#FDFEFF"/>
+    <path d="M151 89L161 85V100L151 96V89Z" fill="#91C8FF"/>
+    <path d="M155 81L173 73" stroke="#CBE5FF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M171 77L189 69" stroke="#8AC5FF" stroke-width="3" stroke-linecap="round"/>
+
+    <path d="M175 44H200" stroke="#E7F7FF" stroke-width="4" stroke-linecap="round"/>
+    <path d="M178 52H205" stroke="#D2EDFF" stroke-width="4" stroke-linecap="round"/>
+    <path d="M96 82H103" stroke="#D8F1FF" stroke-width="4" stroke-linecap="round"/>
+    <path d="M96 92H103" stroke="#D8F1FF" stroke-width="4" stroke-linecap="round"/>
+    <path d="M96 102H103" stroke="#D8F1FF" stroke-width="4" stroke-linecap="round"/>
+
+    <rect x="176" y="96" width="26" height="28" rx="4" fill="#2F5AB1" fill-opacity="0.22"/>
+    <path d="M184 108H194" stroke="#EEF7FF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M184 115H194" stroke="#CFE4FF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M184 122H194" stroke="#CFE4FF" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <path d="M93 146L157 181L224 146" stroke="#91A9D9" stroke-width="3" stroke-linecap="round" stroke-opacity="0.45"/>
+  <circle cx="226" cy="164" r="4" fill="#415A92"/>
+  <circle cx="239" cy="159" r="4" fill="#415A92"/>
+  <circle cx="252" cy="154" r="4" fill="#415A92"/>
+
+  <rect x="64" y="32" width="74" height="24" rx="12" fill="#FFFFFF" fill-opacity="0.74"/>
+  <path d="M77 44H102" stroke="#6BAFFF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M111 44H125" stroke="#C9DEFF" stroke-width="4" stroke-linecap="round"/>
+</svg>

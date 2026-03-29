@@ -1,0 +1,15 @@
+Options -Indexes
+ServerSignature Off
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Chặn truy cập file/thu muc nhạy cảm
+RewriteRule ^(config|database|app|storage|logs|vendor)/ - [F,L,NC]
+RewriteRule (^|/)\. - [F,L]
+RewriteRule ^(composer\.(json|lock)|\.env(\..*)?)$ - [F,L,NC]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ public/index.php [QSA,L]
+</IfModule>

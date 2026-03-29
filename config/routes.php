@@ -1,0 +1,96 @@
+<?php
+
+return [
+    ['GET', '/', 'HomeController@index'],
+
+    ['GET', '/products', 'ProductController@index'],
+    ['GET', '/products/show/{id}', 'ProductController@show'],
+    ['POST', '/products/checkout/{id}', 'ProductController@checkout'],
+
+    ['GET', '/login', 'AuthController@showLogin'],
+    ['POST', '/login', 'AuthController@login'],
+    ['GET', '/auth/google', 'AuthController@redirectGoogle'],
+    ['GET', '/auth/google/callback', 'AuthController@callbackGoogle'],
+    ['GET', '/login/2fa', 'AuthController@showTwoFactorChallenge'],
+    ['POST', '/login/2fa', 'AuthController@verifyTwoFactorChallenge'],
+    ['GET', '/register', 'AuthController@showRegister'],
+    ['POST', '/register', 'AuthController@register'],
+    ['GET', '/forgot-password', 'AuthController@showForgot'],
+    ['POST', '/forgot-password', 'AuthController@forgotPassword'],
+    ['POST', '/logout', 'AuthController@logout'],
+
+    ['GET', '/profile', 'ProfileController@index'],
+    ['POST', '/profile/update', 'ProfileController@update'],
+    ['POST', '/profile/wallet/deposit', 'ProfileController@depositWallet'],
+    ['POST', '/profile/password', 'ProfileController@changePassword'],
+    ['POST', '/profile/2fa/enable', 'ProfileController@enableTwoFactor'],
+    ['POST', '/profile/2fa/disable', 'ProfileController@disableTwoFactor'],
+    ['POST', '/profile/2fa/reset/request', 'ProfileController@requestTwoFactorReset'],
+    ['POST', '/profile/2fa/reset/confirm', 'ProfileController@confirmTwoFactorReset'],
+    ['POST', '/profile/2fa/backup-codes/regenerate', 'ProfileController@regenerateBackupCodes'],
+    ['POST', '/profile/sessions/logout-others', 'ProfileController@logoutOtherSessions'],
+    ['POST', '/profile/email/change', 'ProfileController@changeEmailSecure'],
+
+    ['POST', '/ai/chat/customer', 'AiController@customerChat'],
+    ['POST', '/ai/feedback/customer', 'AiController@customerFeedback'],
+    ['POST', '/feedback/header/store', 'FeedbackController@storeFromHeader'],
+
+    ['GET', '/admin', 'Admin\\DashboardController@index'],
+    ['POST', '/admin/ai/chat', 'Admin\\AiController@chat'],
+    ['GET', '/admin/ai/progress', 'Admin\\AiController@progress'],
+    ['GET', '/admin/ai/session', 'Admin\\AiController@session'],
+    ['GET', '/admin/ai/summary', 'Admin\\AiController@summary'],
+    ['GET', '/admin/feedback', 'Admin\\FeedbackController@index'],
+
+    ['GET', '/admin/products', 'Admin\\ProductController@index'],
+    ['GET', '/admin/products/create', 'Admin\\ProductController@create'],
+    ['POST', '/admin/products/store', 'Admin\\ProductController@store'],
+    ['GET', '/admin/products/edit/{id}', 'Admin\\ProductController@edit'],
+    ['POST', '/admin/products/update/{id}', 'Admin\\ProductController@update'],
+    ['POST', '/admin/products/delete/{id}', 'Admin\\ProductController@delete'],
+    ['GET', '/admin/products/show/{id}', 'Admin\\ProductController@show'],
+
+    ['GET', '/admin/categories', 'Admin\\CategoryController@index'],
+    ['GET', '/admin/categories/create', 'Admin\\CategoryController@create'],
+    ['POST', '/admin/categories/store', 'Admin\\CategoryController@store'],
+    ['GET', '/admin/categories/edit/{id}', 'Admin\\CategoryController@edit'],
+    ['POST', '/admin/categories/update/{id}', 'Admin\\CategoryController@update'],
+    ['POST', '/admin/categories/delete/{id}', 'Admin\\CategoryController@delete'],
+
+    ['GET', '/admin/users', 'Admin\\UserController@index'],
+    ['GET', '/admin/users/create', 'Admin\\UserController@create'],
+    ['POST', '/admin/users/store', 'Admin\\UserController@store'],
+    ['GET', '/admin/users/edit/{id}', 'Admin\\UserController@edit'],
+    ['POST', '/admin/users/update/{id}', 'Admin\\UserController@update'],
+    ['POST', '/admin/users/delete/{id}', 'Admin\\UserController@delete'],
+    ['POST', '/admin/users/toggle-status/{id}', 'Admin\\UserController@toggleStatus'],
+    ['POST', '/admin/users/reset-password/{id}', 'Admin\\UserController@resetPassword'],
+
+    ['GET', '/admin/orders', 'Admin\\OrderController@index'],
+    ['GET', '/admin/orders/show/{id}', 'Admin\\OrderController@show'],
+    ['POST', '/admin/orders/update-status/{id}', 'Admin\\OrderController@updateStatus'],
+    ['POST', '/admin/orders/delete/{id}', 'Admin\\OrderController@delete'],
+    ['GET', '/admin/payments', 'Admin\\PaymentController@index'],
+
+    ['GET', '/admin/settings', 'Admin\\SettingController@index'],
+    ['POST', '/admin/settings/update', 'Admin\\SettingController@update'],
+
+    ['GET', '/admin/sql-manager', 'Admin\\SqlManagerController@index'],
+    ['GET', '/admin/sql-manager/table-data', 'Admin\\SqlManagerController@tableData'],
+    ['POST', '/admin/sql-manager/query', 'Admin\\SqlManagerController@runQuery'],
+    ['POST', '/admin/sql-manager/commit-batch', 'Admin\\SqlManagerController@commitBatch'],
+    ['POST', '/admin/sql-manager/import', 'Admin\\SqlManagerController@importSql'],
+    ['POST', '/admin/sql-manager/update-row', 'Admin\\SqlManagerController@updateRow'],
+    ['POST', '/admin/sql-manager/insert-row', 'Admin\\SqlManagerController@insertRow'],
+    ['POST', '/admin/sql-manager/delete-row', 'Admin\\SqlManagerController@deleteRow'],
+
+    ['GET', '/admin/coupons', 'Admin\\CouponController@index'],
+    ['POST', '/admin/coupons/store', 'Admin\\CouponController@store'],
+    ['POST', '/admin/coupons/toggle-status/{id}', 'Admin\\CouponController@toggleStatus'],
+    ['POST', '/admin/coupons/delete/{id}', 'Admin\\CouponController@delete'],
+
+    ['GET', '/admin/ranks', 'Admin\\RankController@index'],
+    ['POST', '/admin/ranks/update', 'Admin\\RankController@update'],
+
+    ['GET', '/admin/audit-logs', 'Admin\\AuditLogController@index'],
+];

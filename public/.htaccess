@@ -1,0 +1,21 @@
+Options -Indexes
+
+<IfModule mod_php.c>
+    php_value upload_max_filesize 500M
+    php_value post_max_size 520M
+    php_value max_file_uploads 20
+    php_value max_execution_time 600
+    php_value max_input_time 600
+    php_value memory_limit 1024M
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteRule (^|/)\. - [F,L]
+    RewriteRule ^(composer\.(json|lock)|\.env(\..*)?)$ - [F,L,NC]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>

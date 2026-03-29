@@ -1,0 +1,82 @@
+<svg width="320" height="240" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGame" x1="50" y1="24" x2="270" y2="206" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF5EF"/>
+      <stop offset="1" stop-color="#FFE8D8"/>
+    </linearGradient>
+    <linearGradient id="baseTopGame" x1="86" y1="132" x2="242" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#49567F"/>
+      <stop offset="1" stop-color="#2F3F6A"/>
+    </linearGradient>
+    <linearGradient id="baseFrontGame" x1="160" y1="138" x2="240" y2="184" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDFD"/>
+      <stop offset="1" stop-color="#F4E5E6"/>
+    </linearGradient>
+    <linearGradient id="baseSideGame" x1="86" y1="138" x2="162" y2="184" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD6D5"/>
+      <stop offset="1" stop-color="#FFB9C0"/>
+    </linearGradient>
+    <linearGradient id="cardFrontGame" x1="118" y1="54" x2="212" y2="146" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFBA6D"/>
+      <stop offset="1" stop-color="#FF5A5F"/>
+    </linearGradient>
+    <linearGradient id="cardSideGame" x1="104" y1="65" x2="134" y2="146" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF8F86"/>
+      <stop offset="1" stop-color="#D9485F"/>
+    </linearGradient>
+    <linearGradient id="cardTopGame" x1="116" y1="46" x2="196" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD9A8"/>
+      <stop offset="1" stop-color="#FFA97B"/>
+    </linearGradient>
+    <filter id="gameShadow" x="46" y="26" width="236" height="184" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#8A3D54" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="320" height="240" rx="28" fill="url(#bgGame)"/>
+  <ellipse cx="161" cy="192" rx="104" ry="18" fill="#F3D8D8"/>
+
+  <g filter="url(#gameShadow)">
+    <path d="M88 128L166 88L242 128L162 170L88 128Z" fill="url(#baseTopGame)"/>
+    <path d="M88 128V152L162 188V170L88 128Z" fill="url(#baseSideGame)"/>
+    <path d="M242 128V152L162 188V170L242 128Z" fill="url(#baseFrontGame)"/>
+
+    <path d="M113 66L164 44L216 66V142L164 163L113 140V66Z" fill="url(#cardFrontGame)"/>
+    <path d="M113 66L94 78V149L113 140V66Z" fill="url(#cardSideGame)"/>
+    <path d="M113 66L164 44L144 56L94 78L113 66Z" fill="url(#cardTopGame)"/>
+    <path d="M164 44L216 66L196 78L144 56L164 44Z" fill="#FFC68A"/>
+
+    <rect x="130" y="68" width="47" height="52" rx="8" fill="#FFF8F1"/>
+    <path d="M143 92C143 84.82 148.82 79 156 79H157C164.18 79 170 84.82 170 92V94C170 101.18 164.18 107 157 107H156C148.82 107 143 101.18 143 94V92Z" fill="#FF8A64"/>
+    <path d="M148 92H165" stroke="#FFF1E9" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="149" cy="94" r="3.4" fill="#FFF1E9"/>
+    <circle cx="164" cy="94" r="3.4" fill="#FFF1E9"/>
+    <path d="M152 88V100" stroke="#FFF1E9" stroke-width="3" stroke-linecap="round"/>
+    <path d="M161 90H167" stroke="#FFF1E9" stroke-width="3" stroke-linecap="round"/>
+
+    <path d="M126 126L173 106L209 123L162 143L126 126Z" fill="#FFF0E8"/>
+    <path d="M126 126V143L162 161V143L126 126Z" fill="#FFAA9F"/>
+    <path d="M209 123V140L162 161V143L209 123Z" fill="#FFD0C9"/>
+
+    <path d="M179 82H201" stroke="#FFEBD8" stroke-width="4" stroke-linecap="round"/>
+    <path d="M179 91H206" stroke="#FFD8BB" stroke-width="4" stroke-linecap="round"/>
+    <path d="M100 91H107" stroke="#FFD6D6" stroke-width="4" stroke-linecap="round"/>
+    <path d="M100 101H107" stroke="#FFD6D6" stroke-width="4" stroke-linecap="round"/>
+    <path d="M100 111H107" stroke="#FFD6D6" stroke-width="4" stroke-linecap="round"/>
+
+    <path d="M189 133L197 129" stroke="#FF8F80" stroke-width="4" stroke-linecap="round"/>
+    <path d="M196 137L204 133" stroke="#FF8F80" stroke-width="4" stroke-linecap="round"/>
+    <path d="M182 138L190 134" stroke="#FFC2AF" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <circle cx="229" cy="166" r="4" fill="#38476F"/>
+  <circle cx="242" cy="161" r="4" fill="#38476F"/>
+  <circle cx="255" cy="156" r="4" fill="#38476F"/>
+
+  <rect x="64" y="32" width="82" height="24" rx="12" fill="#FFFFFF" fill-opacity="0.75"/>
+  <path d="M78 44H96" stroke="#FF946C" stroke-width="4" stroke-linecap="round"/>
+  <path d="M104 44H126" stroke="#FFD1BF" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="203" cy="55" r="8" fill="#FFF4EA" fill-opacity="0.85"/>
+  <path d="M203 49V61" stroke="#FF8A64" stroke-width="3" stroke-linecap="round"/>
+  <path d="M197 55H209" stroke="#FF8A64" stroke-width="3" stroke-linecap="round"/>
+</svg>

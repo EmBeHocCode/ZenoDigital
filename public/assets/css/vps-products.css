@@ -1,0 +1,579 @@
+/* VPS theme surface */
+
+.vps-hero {
+    background: linear-gradient(180deg, #f4f9ff 0%, #f8fbff 100%);
+}
+
+.vps-hero-card,
+.vps-filter-wrap,
+.vps-plan-card,
+.vps-config-card,
+.vps-summary-card,
+.vps-related-card,
+.vps-detail-hero {
+    background: #fff;
+    border: 1px solid #e5eaf3;
+    border-radius: 20px;
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+}
+
+.vps-hero-card,
+.vps-detail-hero {
+    padding: 26px;
+    background: radial-gradient(circle at top right, rgba(78, 151, 255, 0.14), transparent 42%), #fff;
+}
+
+.vps-kicker {
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #1967d2;
+}
+
+.vps-title {
+    font-size: clamp(1.55rem, 3vw, 2.25rem);
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.vps-subtitle {
+    color: #5f6b7a;
+    max-width: 700px;
+}
+
+.vps-hero-icon {
+    width: 84px;
+    height: 84px;
+    object-fit: contain;
+    opacity: .95;
+}
+
+.vps-trust-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid #d6e6ff;
+    background: #f6faff;
+    border-radius: 999px;
+    font-size: .82rem;
+    font-weight: 600;
+    color: #2359a8;
+}
+
+
+/* Filter row */
+
+.vps-filter-wrap {
+    padding: 16px;
+}
+
+.vps-filter-input {
+    border-radius: 14px;
+    min-height: 44px;
+    border-color: #dbe4f3;
+}
+
+.vps-filter-input:focus {
+    border-color: #2e84ff;
+    box-shadow: 0 0 0 .2rem rgba(46, 132, 255, 0.16);
+}
+
+.vps-btn-filter,
+.vps-btn-solid,
+.vps-pay-btn {
+    min-height: 44px;
+    border: none;
+    border-radius: 14px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #2d8bff 0%, #2f64ff 100%);
+    color: #fff;
+    transition: all .2s ease;
+}
+
+.vps-btn-filter:hover,
+.vps-btn-solid:hover,
+.vps-pay-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 22px rgba(47, 100, 255, 0.25);
+    color: #fff;
+}
+
+.vps-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.vps-chip,
+.vps-chip-reset {
+    border: 1px solid #dce6f8;
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: #fff;
+    font-size: .83rem;
+    color: #46607e;
+    text-decoration: none;
+}
+
+.vps-chip.active {
+    background: #edf4ff;
+    border-color: #8ab8ff;
+    color: #1f5bc0;
+    font-weight: 700;
+}
+
+.vps-count-pill {
+    font-size: .82rem;
+    background: #eef5ff;
+    color: #2455aa;
+    border: 1px solid #d4e5ff;
+    border-radius: 999px;
+    padding: 6px 10px;
+}
+
+
+/* Plan card */
+
+.vps-plan-card {
+    height: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all .25s ease;
+}
+
+.vps-plan-card:hover {
+    border-color: #8eb8ff;
+    transform: translateY(-6px);
+    box-shadow: 0 16px 34px rgba(37, 99, 235, 0.15);
+}
+
+.vps-plan-card.is-featured {
+    border: 2px solid #4a8df7;
+    box-shadow: 0 18px 36px rgba(74, 141, 247, 0.2);
+}
+
+.vps-plan-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.vps-plan-icon {
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    border-radius: 12px;
+    background: #f0f6ff;
+    border: 1px solid #dbe8fb;
+}
+
+.vps-plan-badge {
+    font-size: .75rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 5px 9px;
+    background: #eef5ff;
+    color: #2159af;
+}
+
+.vps-plan-title {
+    font-size: 1.14rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.vps-plan-desc {
+    color: #6b7787;
+    min-height: 40px;
+    margin-bottom: 0;
+}
+
+.vps-price-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.vps-price {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #1e54c9;
+    line-height: 1.2;
+}
+
+.vps-cycle {
+    color: #72809a;
+}
+
+.vps-spec-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.vps-spec-chip {
+    border: 1px solid #dce6f8;
+    background: #fafcff;
+    border-radius: 10px;
+    padding: 5px 8px;
+    font-size: .78rem;
+    color: #3f5570;
+}
+
+.vps-feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+    color: #49586d;
+    font-size: .92rem;
+}
+
+.vps-feature-list li {
+    display: flex;
+    align-items: start;
+    gap: 7px;
+}
+
+.vps-feature-list li::before {
+    content: '✓';
+    color: #1f9d63;
+    font-weight: 800;
+}
+
+.vps-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.vps-btn-outline {
+    min-height: 42px;
+    border-radius: 12px;
+    border: 1px solid #b7ccf5;
+    color: #2458b3;
+    font-weight: 700;
+    background: #fff;
+}
+
+.vps-btn-outline:hover {
+    background: #f1f7ff;
+    border-color: #8fb5f8;
+    color: #17458f;
+}
+
+.vps-pagination .page-link {
+    border-radius: 10px;
+    margin: 0 3px;
+    border: 1px solid #dae5f8;
+    color: #2c5eb8;
+}
+
+.vps-pagination .active .page-link {
+    background: #2f6ff6;
+    border-color: #2f6ff6;
+}
+
+
+/* Product configurator */
+
+.vps-config-card,
+.vps-summary-card {
+    padding: 20px;
+}
+
+.vps-soft-note {
+    font-size: .82rem;
+    color: #66778f;
+}
+
+.vps-config-summary-chip {
+    border-radius: 12px;
+    border: 1px solid #dbe5f7;
+    background: #f8fbff;
+    padding: 10px 12px;
+    color: #3b5677;
+}
+
+.vps-stepper-wrap {
+    display: grid;
+    gap: 12px;
+}
+
+.vps-stepper-item {
+    border: 1px solid #dce6f7;
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vps-stepper-item label {
+    font-weight: 700;
+    margin: 0;
+}
+
+.vps-stepper-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vps-step-btn {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #bbcdf1;
+    border-radius: 10px;
+    background: #fff;
+    font-weight: 700;
+    color: #2a579f;
+}
+
+.vps-step-btn:hover {
+    background: #eef4ff;
+}
+
+.vps-radio-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.vps-radio-card {
+    border: 1px solid #dce5f7;
+    border-radius: 14px;
+    padding: 12px;
+    display: grid;
+    gap: 4px;
+    cursor: pointer;
+}
+
+.vps-radio-card input {
+    display: none;
+}
+
+.vps-radio-card.is-selected,
+.vps-radio-card:has(input:checked) {
+    border-color: #76a8ff;
+    background: #f3f8ff;
+}
+
+.vps-os-list {
+    border: 1px solid #e0e8f7;
+    border-radius: 14px;
+    max-height: 280px;
+    overflow: auto;
+}
+
+.vps-os-item {
+    display: grid;
+    grid-template-columns: 34px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #edf2fb;
+    cursor: pointer;
+}
+
+.vps-os-item:last-child {
+    border-bottom: 0;
+}
+
+.vps-os-item input {
+    display: none;
+}
+
+.vps-os-item:hover,
+.vps-os-item.is-selected,
+.vps-os-item:has(input:checked) {
+    background: #f5f9ff;
+}
+
+.vps-os-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d5e4fb;
+    background: #fff;
+}
+
+.vps-os-check {
+    opacity: 0;
+    color: #2670f5;
+    font-weight: 800;
+}
+
+.vps-os-item.is-selected .vps-os-check,
+.vps-os-item:has(input:checked) .vps-os-check {
+    opacity: 1;
+}
+
+.vps-addon-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.vps-addon-item {
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    gap: 10px;
+    align-items: start;
+    border: 1px solid #dce5f7;
+    border-radius: 14px;
+    padding: 12px;
+    cursor: pointer;
+}
+
+.vps-addon-item:hover,
+.vps-addon-item:has(input:checked) {
+    background: #f6faff;
+    border-color: #8fb6fb;
+}
+
+.vps-addon-price {
+    color: #1d57bf;
+    font-weight: 700;
+    font-size: .88rem;
+}
+
+.vps-summary-card {
+    position: sticky;
+    top: 92px;
+}
+
+.vps-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px dashed #e2eaf8;
+    font-size: .92rem;
+}
+
+.vps-total-box {
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f2f7ff, #f7fbff);
+    border: 1px solid #d9e7fd;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.vps-total-box strong {
+    font-size: 1.35rem;
+    color: #2258c4;
+}
+
+.vps-pay-btn {
+    min-height: 48px;
+    font-size: 1rem;
+}
+
+.vps-trust-note {
+    padding: 10px;
+    border-radius: 12px;
+    background: #f7faff;
+    border: 1px solid #e2ebfb;
+    color: #546681;
+}
+
+.vps-related-card {
+    padding: 14px;
+}
+
+.vps-related-card h4 {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+
+/* State modal */
+
+.vps-state-modal .modal-content {
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 24px 50px rgba(15, 23, 42, 0.25);
+}
+
+.vps-state-icon {
+    width: 62px;
+    height: 62px;
+    border-radius: 999px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.2rem;
+}
+
+.vps-state-icon.is-confirm {
+    background: #eff5ff;
+    color: #356fd8;
+}
+
+.vps-state-icon.is-success {
+    background: #ecfbf3;
+    color: #1f9d63;
+}
+
+.vps-state-icon.is-error {
+    background: #fff1f1;
+    color: #d04848;
+}
+
+.vps-state-icon.is-loading {
+    background: #eff5ff;
+}
+
+.vps-state-icon.is-loading span {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #b4ccf7;
+    border-top-color: #2d77ea;
+    border-radius: 999px;
+    animation: vps-spin .8s linear infinite;
+}
+
+@keyframes vps-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .vps-summary-card {
+        position: static;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .vps-radio-grid {
+        grid-template-columns: 1fr;
+    }
+    .vps-hero-card,
+    .vps-detail-hero {
+        padding: 18px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .vps-card-actions {
+        grid-template-columns: 1fr;
+    }
+    .vps-stepper-item {
+        flex-direction: column;
+        align-items: start;
+        gap: 10px;
+    }
+}
