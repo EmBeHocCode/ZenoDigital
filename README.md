@@ -1,5 +1,12 @@
 # ZenoxDigital
 
+![PHP MVC](https://img.shields.io/badge/PHP-MVC-777BB4?logo=php&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?logo=mysql&logoColor=white)
+![Bootstrap 5](https://img.shields.io/badge/Bootstrap-5-7952B3?logo=bootstrap&logoColor=white)
+![Cloud First](https://img.shields.io/badge/Domain-Cloud--First-0F766E)
+![AI Copilot](https://img.shields.io/badge/AI-Meow%20Copilot-0EA5E9)
+![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)
+
 ZenoxDigital là một web platform bán dịch vụ số theo định hướng cloud-first, tập trung vào các gói Cloud Server / VPS và đi kèm một hệ thống quản trị backoffice tương đối đầy đủ. Dự án được xây dựng theo kiến trúc PHP MVC, có storefront cho khách hàng, admin dashboard cho vận hành, cùng các thành phần AI hỗ trợ tư vấn và quản trị dữ liệu theo ngữ cảnh thực tế của shop.
 
 README này được viết theo hướng phù hợp để:
@@ -7,6 +14,17 @@ README này được viết theo hướng phù hợp để:
 - đưa lên GitHub như một project showcase
 - phục vụ báo cáo học thuật / đồ án
 - thể hiện năng lực full-stack, tư duy hệ thống và tổ chức nghiệp vụ khi dùng trong CV hoặc portfolio
+
+> Preview boards dưới đây là ảnh minh họa được chuẩn bị sẵn cho GitHub showcase. Khi cần, có thể thay trực tiếp bằng screenshot thật từ hệ thống đang chạy.
+
+<p align="center">
+  <img src="docs/screenshots/homepage-preview.svg" alt="ZenoxDigital Storefront Preview" width="48%" />
+  <img src="docs/screenshots/admin-dashboard-preview.svg" alt="ZenoxDigital Admin Dashboard Preview" width="48%" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/ai-copilot-preview.svg" alt="ZenoxDigital AI Copilot Preview" width="48%" />
+  <img src="docs/screenshots/sql-manager-preview.svg" alt="ZenoxDigital SQL Manager Preview" width="48%" />
+</p>
 
 ## Mục lục
 
@@ -308,9 +326,16 @@ Nếu dùng seed/schema local mặc định hiện tại:
 
 ## 11. Hình ảnh minh họa
 
-Phần này nên được bổ sung screenshot khi đưa dự án lên GitHub hoặc dùng cho báo cáo.
+Thư mục `docs/screenshots/` đã được tạo sẵn để phục vụ showcase trên GitHub và báo cáo học thuật.
 
-Gợi ý các ảnh nên chụp:
+Hiện tại README đang dùng các ảnh preview placeholder sau:
+
+- `docs/screenshots/homepage-preview.svg`
+- `docs/screenshots/admin-dashboard-preview.svg`
+- `docs/screenshots/ai-copilot-preview.svg`
+- `docs/screenshots/sql-manager-preview.svg`
+
+Khi hoàn thiện hồ sơ project, nên thay hoặc bổ sung screenshot thật cho các khu vực:
 
 - Homepage / storefront
 - Trang danh sách sản phẩm
@@ -319,15 +344,6 @@ Gợi ý các ảnh nên chụp:
 - Product management
 - Meow Copilot panel
 - SQL Manager
-
-Placeholder đề xuất:
-
-```text
-docs/screenshots/homepage.png
-docs/screenshots/admin-dashboard.png
-docs/screenshots/meow-copilot.png
-docs/screenshots/sql-manager.png
-```
 
 ## 12. Roadmap
 
@@ -354,7 +370,7 @@ Nếu bạn muốn dùng hoặc mở rộng dự án:
 
 ## 14. Giấy phép
 
-Repo hiện chưa gắn file `LICENSE` riêng. Nếu đưa public trên GitHub để cho phép tái sử dụng rõ ràng, nên bổ sung một giấy phép chính thức như `MIT` hoặc `Apache-2.0`.
+Dự án hiện được phát hành theo giấy phép `MIT`. Xem chi tiết tại file `LICENSE`.
 
 ---
 

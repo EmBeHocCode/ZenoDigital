@@ -1,18 +1,39 @@
+# Environment
 .env
+.env.local
+.env.*.local
+!.env.example
 
 # OS / editor
 .DS_Store
 Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.code-workspace
 
-# Runtime temp files
+# Dependencies / build output
+node_modules/
+vendor/
+dist/
+build/
+coverage/
+
+# Logs / temp
 tmp_*
 *.log
+*.tmp
+*.cache
 
-# Session / cache / local AI runtime state
-storage/sessions/
-storage/cli-sessions/
-storage/admin-ai/cache/
-storage/admin-ai/progress/
+# Runtime state
+storage/sessions/*
+!storage/sessions/.gitkeep
+storage/cli-sessions/*
+!storage/cli-sessions/.gitkeep
+storage/admin-ai/cache/*
+!storage/admin-ai/cache/.gitkeep
+storage/admin-ai/progress/*
+!storage/admin-ai/progress/.gitkeep
 
 # User uploads / generated media
 public/uploads/*

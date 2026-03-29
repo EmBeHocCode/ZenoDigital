@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" fill="none">
+  <rect width="1280" height="720" rx="28" fill="#0B1220"/>
+  <rect x="28" y="28" width="1224" height="664" rx="22" fill="url(#paint0_linear)"/>
+  <rect x="64" y="62" width="1152" height="64" rx="16" fill="#F8FAFC" fill-opacity="0.1"/>
+  <rect x="88" y="84" width="140" height="18" rx="9" fill="#22C55E"/>
+  <rect x="858" y="84" width="88" height="18" rx="9" fill="#E2E8F0" fill-opacity="0.55"/>
+  <rect x="966" y="84" width="88" height="18" rx="9" fill="#E2E8F0" fill-opacity="0.55"/>
+  <rect x="1074" y="84" width="106" height="18" rx="9" fill="#38BDF8"/>
+  <rect x="64" y="160" width="540" height="246" rx="24" fill="#020617" fill-opacity="0.42"/>
+  <text x="100" y="236" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="46" font-weight="700">ZenoxDigital Storefront</text>
+  <text x="100" y="286" fill="#CBD5E1" font-family="Segoe UI, Arial, sans-serif" font-size="24">Cloud-first digital services storefront focused on VPS and Cloud Server packages.</text>
+  <rect x="100" y="324" width="174" height="46" rx="23" fill="#22C55E"/>
+  <text x="133" y="353" fill="#052E16" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700">Explore Plans</text>
+  <rect x="296" y="324" width="194" height="46" rx="23" fill="#F8FAFC" fill-opacity="0.12"/>
+  <text x="332" y="353" fill="#E2E8F0" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600">Compare Packages</text>
+  <rect x="642" y="160" width="254" height="246" rx="22" fill="#F8FAFC" fill-opacity="0.1"/>
+  <rect x="924" y="160" width="254" height="246" rx="22" fill="#F8FAFC" fill-opacity="0.1"/>
+  <rect x="676" y="196" width="186" height="18" rx="9" fill="#E2E8F0" fill-opacity="0.7"/>
+  <rect x="676" y="228" width="138" height="14" rx="7" fill="#22C55E"/>
+  <rect x="676" y="268" width="118" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.5"/>
+  <rect x="676" y="294" width="154" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.5"/>
+  <rect x="676" y="320" width="126" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.5"/>
+  <rect x="676" y="352" width="112" height="28" rx="14" fill="#38BDF8"/>
+  <rect x="958" y="196" width="186" height="18" rx="9" fill="#E2E8F0" fill-opacity="0.7"/>
+  <rect x="958" y="228" width="118" height="14" rx="7" fill="#F59E0B"/>
+  <rect x="958" y="268" width="136" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.5"/>
+  <rect x="958" y="294" width="148" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.5"/>
+  <rect x="958" y="320" width="120" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.5"/>
+  <rect x="958" y="352" width="112" height="28" rx="14" fill="#22C55E"/>
+  <rect x="64" y="450" width="1114" height="178" rx="24" fill="#F8FAFC" fill-opacity="0.1"/>
+  <rect x="94" y="484" width="246" height="110" rx="20" fill="#020617" fill-opacity="0.34"/>
+  <rect x="364" y="484" width="246" height="110" rx="20" fill="#020617" fill-opacity="0.34"/>
+  <rect x="634" y="484" width="246" height="110" rx="20" fill="#020617" fill-opacity="0.34"/>
+  <rect x="904" y="484" width="244" height="110" rx="20" fill="#020617" fill-opacity="0.34"/>
+  <text x="100" y="676" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="20">Preview placeholder for GitHub showcase. Replace with a real storefront screenshot when publishing.</text>
+  <defs>
+    <linearGradient id="paint0_linear" x1="72" y1="68" x2="1216" y2="648" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="1" stop-color="#134E4A"/>
+    </linearGradient>
+  </defs>
+</svg>

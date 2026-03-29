@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" fill="none">
+  <rect width="1280" height="720" rx="28" fill="#020617"/>
+  <rect x="38" y="38" width="1204" height="644" rx="24" fill="#0F172A"/>
+  <rect x="54" y="54" width="766" height="612" rx="22" fill="#111827"/>
+  <rect x="850" y="54" width="376" height="612" rx="22" fill="#F8FAFC"/>
+  <text x="96" y="112" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">Meow Copilot</text>
+  <text x="96" y="152" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="22">Admin AI assistant with progress state, preview-confirm mutation flow and real shop data context.</text>
+  <rect x="96" y="198" width="240" height="40" rx="20" fill="#0EA5E9"/>
+  <text x="130" y="224" fill="#082F49" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">Bot đang kiểm dữ liệu...</text>
+  <rect x="96" y="264" width="312" height="48" rx="18" fill="#1E293B"/>
+  <rect x="96" y="336" width="362" height="84" rx="18" fill="#E2E8F0"/>
+  <rect x="220" y="450" width="390" height="92" rx="18" fill="#22C55E"/>
+  <rect x="96" y="576" width="584" height="42" rx="21" fill="#F8FAFC" fill-opacity="0.1"/>
+  <rect x="696" y="576" width="98" height="42" rx="21" fill="#38BDF8"/>
+  <text x="884" y="108" fill="#0F172A" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">AI Operator Panel</text>
+  <rect x="882" y="146" width="132" height="30" rx="15" fill="#DBEAFE"/>
+  <rect x="1028" y="146" width="142" height="30" rx="15" fill="#DCFCE7"/>
+  <rect x="882" y="206" width="314" height="124" rx="20" fill="#E2E8F0"/>
+  <rect x="882" y="356" width="314" height="124" rx="20" fill="#E2E8F0"/>
+  <rect x="882" y="506" width="314" height="124" rx="20" fill="#E2E8F0"/>
+  <text x="96" y="668" fill="#94A3B8" font-family="Segoe UI, Arial, sans-serif" font-size="20">Preview placeholder for admin AI Copilot. Replace with a real screenshot when publishing the final showcase.</text>
+</svg>

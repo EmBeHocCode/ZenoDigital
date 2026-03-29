@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" fill="none">
+  <rect width="1280" height="720" rx="28" fill="#111827"/>
+  <rect x="28" y="28" width="1224" height="664" rx="22" fill="#F8FAFC"/>
+  <rect x="28" y="28" width="262" height="664" rx="22" fill="#0F172A"/>
+  <rect x="64" y="74" width="132" height="18" rx="9" fill="#22C55E"/>
+  <rect x="64" y="128" width="174" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.65"/>
+  <rect x="64" y="168" width="152" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.65"/>
+  <rect x="64" y="208" width="182" height="14" rx="7" fill="#38BDF8"/>
+  <rect x="64" y="248" width="144" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.65"/>
+  <rect x="64" y="288" width="158" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.65"/>
+  <rect x="64" y="328" width="136" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.65"/>
+  <rect x="330" y="64" width="880" height="58" rx="18" fill="#E2E8F0"/>
+  <text x="366" y="101" fill="#0F172A" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Admin Dashboard</text>
+  <rect x="330" y="160" width="196" height="120" rx="22" fill="#DCFCE7"/>
+  <rect x="548" y="160" width="196" height="120" rx="22" fill="#DBEAFE"/>
+  <rect x="766" y="160" width="196" height="120" rx="22" fill="#FEF3C7"/>
+  <rect x="984" y="160" width="196" height="120" rx="22" fill="#F3E8FF"/>
+  <rect x="330" y="316" width="542" height="306" rx="24" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+  <rect x="904" y="316" width="276" height="306" rx="24" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="360" y="368" fill="#0F172A" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">Operational KPI and revenue trends</text>
+  <path d="M378 560C438 512 482 524 536 474C578 435 634 432 680 388C726 344 774 340 826 374" stroke="#22C55E" stroke-width="8" stroke-linecap="round"/>
+  <rect x="944" y="366" width="196" height="18" rx="9" fill="#0F172A"/>
+  <rect x="944" y="402" width="152" height="12" rx="6" fill="#94A3B8"/>
+  <rect x="944" y="444" width="196" height="46" rx="16" fill="#E2E8F0"/>
+  <rect x="944" y="508" width="196" height="46" rx="16" fill="#E2E8F0"/>
+  <rect x="944" y="572" width="196" height="20" rx="10" fill="#22C55E"/>
+  <text x="330" y="670" fill="#64748B" font-family="Segoe UI, Arial, sans-serif" font-size="20">Preview placeholder for admin backoffice layout, KPI cards, summary blocks and operations.</text>
+</svg>
