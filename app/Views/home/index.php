@@ -85,6 +85,7 @@ $homeNoticeConfig = [
 $cloudCategories = is_array($cloudCategories ?? null) ? $cloudCategories : [];
 $secondaryCategories = is_array($secondaryCategories ?? null) ? $secondaryCategories : [];
 $cloudFeaturedProducts = is_array($cloudFeaturedProducts ?? null) ? $cloudFeaturedProducts : [];
+$publicBrandName = app_site_name();
 $primaryCloudCategory = $cloudCategories[0] ?? null;
 $cloudCatalogQuery = [];
 if (is_array($primaryCloudCategory) && !empty($primaryCloudCategory['id'])) {
@@ -151,7 +152,7 @@ if (!function_exists('home_cloud_specs_extract')) {
             <div class="col-xl-6">
                 <span class="badge text-bg-primary mb-3">Cloud-first storefront</span>
                 <h1 class="display-5 fw-bold mb-3">Cloud VPS và Cloud Server cho website, app và workload production</h1>
-                <p class="lead text-secondary mb-4">ZenoxDigital định vị rõ mảng chủ lực là hạ tầng cloud: triển khai nhanh, hỗ trợ kỹ thuật tốt và phù hợp từ website nhỏ đến hệ thống chạy thực tế.</p>
+                <p class="lead text-secondary mb-4"><?= e($publicBrandName) ?> định vị rõ mảng chủ lực là hạ tầng cloud: triển khai nhanh, hỗ trợ kỹ thuật tốt và phù hợp từ website nhỏ đến hệ thống chạy thực tế.</p>
                 <div class="d-flex gap-2 flex-wrap">
                     <a class="btn btn-primary btn-lg" href="<?= e($cloudCatalogUrl) ?>">Xem gói Cloud</a>
                     <a class="btn btn-outline-primary btn-lg" href="<?= $primaryCloudProduct ? base_url('products/show/' . (int) $primaryCloudProduct['id']) : e($cloudCatalogUrl) ?>">
@@ -352,7 +353,7 @@ require __DIR__ . '/../partials/vps_guides.php';
                     <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq2">Có hỗ trợ cài đặt website hoặc phần mềm cơ bản không?</button>
                 </h2>
                 <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body">Có. ZenoxDigital ưu tiên hỗ trợ nhu cầu cloud/VPS, đặc biệt với website, app nội bộ và các thiết lập kỹ thuật cơ bản.</div>
+                    <div class="accordion-body">Có. <?= e($publicBrandName) ?> ưu tiên hỗ trợ nhu cầu cloud/VPS, đặc biệt với website, app nội bộ và các thiết lập kỹ thuật cơ bản.</div>
                 </div>
             </div>
             <div class="accordion-item">

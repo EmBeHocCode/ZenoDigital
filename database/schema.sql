@@ -226,9 +226,27 @@ CREATE TABLE wallet_transactions (
     balance_after DECIMAL(15,2) NOT NULL DEFAULT 0,
     status ENUM('pending','completed','failed') NOT NULL DEFAULT 'completed',
     description VARCHAR(255) NULL,
+    provider VARCHAR(40) NULL,
+    external_reference VARCHAR(120) NULL,
+    provider_payload LONGTEXT NULL,
+    completed_at DATETIME NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     CONSTRAINT fk_wallet_transactions_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE payment_webhook_events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    provider VARCHAR(40) NOT NULL,
+    event_key VARCHAR(190) NOT NULL,
+    transaction_code VARCHAR(60) NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'received',
+    payload LONGTEXT NULL,
+    last_error VARCHAR(255) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    processed_at DATETIME NULL,
+    UNIQUE KEY uq_payment_webhook_provider_event (provider, event_key)
 );
 
 CREATE TABLE user_rank_coupons (
@@ -296,6 +314,13 @@ VALUES
 ('contact_phone', '0900 000 999', NOW()),
 ('address', 'TP.HCM, Việt Nam', NOW()),
 ('footer_text', 'Nền tảng dịch vụ số hiện đại và an toàn.', NOW()),
+('payment_bank_name', '', NOW()),
+('payment_bank_account', '', NOW()),
+('payment_bank_owner', '', NOW()),
+('sepay_enabled', '0', NOW()),
+('sepay_bank_code', '', NOW()),
+('sepay_qr_template', 'compact', NOW()),
+('sepay_webhook_token', '', NOW()),
 ('facebook_url', 'https://facebook.com', NOW()),
 ('zalo_url', 'https://zalo.me', NOW());
 

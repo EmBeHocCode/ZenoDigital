@@ -2,6 +2,9 @@
 
 return [
     ['GET', '/', 'HomeController@index'],
+    ['GET', '/robots.txt', 'SeoController@robots'],
+    ['GET', '/sitemap.xml', 'SeoController@sitemap'],
+    ['POST', '/payments/sepay/webhook', 'PaymentWebhookController@sepay'],
 
     ['GET', '/products', 'ProductController@index'],
     ['GET', '/products/show/{id}', 'ProductController@show'],
@@ -20,6 +23,7 @@ return [
     ['POST', '/logout', 'AuthController@logout'],
 
     ['GET', '/profile', 'ProfileController@index'],
+    ['GET', '/profile/wallet/status/{code}', 'ProfileController@walletStatus'],
     ['POST', '/profile/update', 'ProfileController@update'],
     ['POST', '/profile/wallet/deposit', 'ProfileController@depositWallet'],
     ['POST', '/profile/password', 'ProfileController@changePassword'],

@@ -1,7 +1,7 @@
 <?php use App\Core\Auth; ?>
 <?php
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
-$siteName = (string) app_setting('site_name', config('app.name', 'Digital Market Pro'));
+$siteName = app_site_name();
 
 $isActive = static function (array $needles) use ($path): bool {
     foreach ($needles as $needle) {

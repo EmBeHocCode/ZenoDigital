@@ -24,7 +24,9 @@ class SettingController extends Controller
         $existingSettings = $model->all();
 
         $data = [
-            'site_name' => sanitize_text((string) ($_POST['site_name'] ?? 'Digital Market Pro'), 120),
+            'site_name' => normalize_public_brand_name(
+                sanitize_text((string) ($_POST['site_name'] ?? 'ZenoDigital'), 120)
+            ),
             'contact_email' => sanitize_text((string) ($_POST['contact_email'] ?? ''), 190),
             'contact_phone' => sanitize_text((string) ($_POST['contact_phone'] ?? ''), 20),
             'address' => sanitize_text((string) ($_POST['address'] ?? ''), 255),
@@ -37,6 +39,9 @@ class SettingController extends Controller
             'payment_bank_name' => sanitize_text((string) ($_POST['payment_bank_name'] ?? ''), 120),
             'payment_bank_account' => sanitize_text((string) ($_POST['payment_bank_account'] ?? ''), 80),
             'payment_bank_owner' => sanitize_text((string) ($_POST['payment_bank_owner'] ?? ''), 120),
+            'sepay_enabled' => isset($_POST['sepay_enabled']) ? '1' : '0',
+            'sepay_bank_code' => sanitize_text((string) ($_POST['sepay_bank_code'] ?? ''), 40),
+            'sepay_qr_template' => validate_enum((string) ($_POST['sepay_qr_template'] ?? 'compact'), ['', 'compact', 'qronly'], 'compact'),
             'smtp_host' => sanitize_text((string) ($_POST['smtp_host'] ?? ''), 120),
             'smtp_port' => sanitize_text((string) ($_POST['smtp_port'] ?? ''), 10),
             'smtp_username' => sanitize_text((string) ($_POST['smtp_username'] ?? ''), 120),
@@ -58,6 +63,15 @@ class SettingController extends Controller
             $data['smtp_password'] = sanitize_text($smtpPassword, 120);
         } elseif (isset($existingSettings['smtp_password'])) {
             $data['smtp_password'] = (string) $existingSettings['smtp_password'];
+        }
+
+        $sepayWebhookToken = trim((string) ($_POST['sepay_webhook_token'] ?? ''));
+        if ($sepayWebhookToken !== '') {
+            $data['sepay_webhook_token'] = sanitize_text($sepayWebhookToken, 120);
+        } elseif (isset($existingSettings['sepay_webhook_token']) && trim((string) $existingSettings['sepay_webhook_token']) !== '') {
+            $data['sepay_webhook_token'] = (string) $existingSettings['sepay_webhook_token'];
+        } elseif ($data['sepay_enabled'] === '1') {
+            $data['sepay_webhook_token'] = bin2hex(random_bytes(16));
         }
 
         if ($data['contact_email'] !== '' && !filter_var($data['contact_email'], FILTER_VALIDATE_EMAIL)) {
@@ -90,6 +104,13 @@ class SettingController extends Controller
             }
         }
 
+        if ($data['sepay_enabled'] === '1') {
+            if ($data['payment_bank_account'] === '' || $data['payment_bank_owner'] === '' || $data['sepay_bank_code'] === '') {
+                flash('danger', 'Muốn bật SePay QR, bạn phải nhập đủ số tài khoản, chủ tài khoản và mã ngân hàng SePay.');
+                redirect('admin/settings');
+            }
+        }
+
         if (!empty($_FILES['logo']['name'])) {
             $logo = secure_upload_image($_FILES['logo'], 'logo');
             if ($logo) {
@@ -115,6 +136,7 @@ class SettingController extends Controller
         admin_audit('update', 'settings', null, [
             'site_name' => $data['site_name'],
             'google_oauth_enabled' => $data['google_oauth_enabled'],
+            'sepay_enabled' => $data['sepay_enabled'],
             'require_2fa_admin' => $data['require_2fa_admin'],
             'maintenance_mode' => $data['maintenance_mode'],
         ]);

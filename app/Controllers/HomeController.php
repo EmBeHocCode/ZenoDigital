@@ -14,6 +14,7 @@ class HomeController extends Controller
     {
         $settingModel = new Setting($this->config);
         $healthGuard = new ModuleHealthGuardService($this->config);
+        $siteSettings = $settingModel->all();
 
         $categories = [];
         $cloudCategories = [];
@@ -52,12 +53,49 @@ class HomeController extends Controller
             ]);
         }
 
+        $siteName = app_site_name();
+        $homeUrl = base_url('/');
+        $siteLogo = trim((string) ($siteSettings['site_logo'] ?? ''));
+        $siteLogoUrl = $siteLogo !== '' ? base_url('uploads/' . ltrim($siteLogo, '/')) : base_url('images/logo/zenox.png');
+        $socialLinks = array_values(array_filter([
+            trim((string) ($siteSettings['facebook_url'] ?? '')),
+            trim((string) ($siteSettings['zalo_url'] ?? '')),
+        ]));
+
+        $structuredData = [
+            [
+                '@context' => 'https://schema.org',
+                '@type' => 'Organization',
+                'name' => $siteName,
+                'url' => $homeUrl,
+                'logo' => $siteLogoUrl,
+                'sameAs' => $socialLinks,
+            ],
+            [
+                '@context' => 'https://schema.org',
+                '@type' => 'WebSite',
+                'name' => $siteName,
+                'url' => $homeUrl,
+                'potentialAction' => [
+                    '@type' => 'SearchAction',
+                    'target' => base_url('products?q={search_term_string}'),
+                    'query-input' => 'required name=search_term_string',
+                ],
+            ],
+        ];
+
         $this->view('home/index', [
+            'title' => $siteName . ' - Cloud VPS, Cloud Server và dịch vụ số',
+            'metaDescription' => $siteName . ' cung cấp Cloud VPS, Cloud Server và dịch vụ số theo hướng cloud-first cho website, app, automation và workload production.',
+            'canonicalUrl' => $homeUrl,
+            'ogType' => 'website',
+            'metaImageUrl' => $siteLogoUrl,
+            'structuredData' => $structuredData,
             'cloudFeaturedProducts' => $cloudFeaturedProducts,
             'categories' => $categories,
             'cloudCategories' => $cloudCategories,
             'secondaryCategories' => $secondaryCategories,
-            'siteSettings' => $settingModel->all(),
+            'siteSettings' => $siteSettings,
         ]);
     }
 }

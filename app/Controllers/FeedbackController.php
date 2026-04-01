@@ -53,7 +53,7 @@ class FeedbackController extends Controller
 
         $this->respondJson([
             'success' => true,
-            'message' => 'Đã ghi nhận góp ý của bạn. Cảm ơn bạn đã phản hồi cho ZenoxDigital.',
+            'message' => 'Đã ghi nhận góp ý của bạn. Cảm ơn bạn đã phản hồi cho ' . app_site_name() . '.',
             'data' => [
                 'feedbackId' => (int) ($feedback['id'] ?? 0),
                 'feedbackCode' => (string) ($feedback['feedback_code'] ?? ''),

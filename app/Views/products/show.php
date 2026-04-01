@@ -197,7 +197,7 @@ $walletStatusMessage = !$isAuthenticated
                         <p class="mb-0 small" data-wallet-note><?= e($walletStatusMessage) ?></p>
                         <?php if ($isAuthenticated): ?>
                             <a href="<?= base_url('profile?tab=wallet-log') ?>" class="btn btn-sm btn-outline-primary mt-3">
-                                <i class="fas fa-plus me-1"></i>Nạp thêm số dư
+                                <i class="fas fa-qrcode me-1"></i>Nạp ví bằng QR
                             </a>
                         <?php endif; ?>
                     </div>
@@ -212,7 +212,7 @@ $walletStatusMessage = !$isAuthenticated
                     </button>
 
                     <div class="vps-trust-note mt-3">
-                        <small>Thanh toán đang dùng ví nội bộ của tài khoản · Cam kết hoàn tiền 7 ngày · Giám sát 24/7 · Hỗ trợ kỹ thuật ưu tiên</small>
+                        <small>Thanh toán đang dùng ví nội bộ của tài khoản · Nạp ví bằng QR SePay · Cam kết hoàn tiền 7 ngày · Giám sát 24/7 · Hỗ trợ kỹ thuật ưu tiên</small>
                     </div>
                 </aside>
             </div>

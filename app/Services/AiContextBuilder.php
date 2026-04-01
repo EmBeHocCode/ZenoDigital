@@ -35,7 +35,7 @@ class AiContextBuilder
 
         $context = array_merge($this->baseActorContext($actor), [
             'site' => [
-                'name' => 'ZenoxDigital',
+                'name' => app_site_name(),
                 'url' => (string) config('app.url', ''),
                 'currency' => (string) config('app.currency', 'VND'),
             ],
@@ -176,7 +176,7 @@ class AiContextBuilder
 
         $context = array_merge($this->baseActorContext($actor), [
             'site' => [
-                'name' => 'ZenoxDigital',
+                'name' => app_site_name(),
                 'url' => (string) config('app.url', ''),
                 'currency' => (string) config('app.currency', 'VND'),
             ],

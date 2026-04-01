@@ -9,6 +9,7 @@ use App\Models\RankProgram;
 use App\Models\User;
 use App\Models\UserSecurity;
 use App\Models\WalletTransaction;
+use App\Services\SePayService;
 
 class ProfileController extends Controller
 {
@@ -54,6 +55,19 @@ class ProfileController extends Controller
         $resetExpiresLabel = $resetPending ? date('H:i:s', (int) $resetMeta['expires_at']) : null;
         $rankSummary = $rankProgram->getRankSummary((int) Auth::id());
         $isAdminRole = strtolower(trim((string) ($user['role_name'] ?? ''))) === 'admin';
+        $depositCode = sanitize_text((string) ($_GET['deposit'] ?? ''), 60);
+        $pendingWalletTopup = $depositCode !== ''
+            ? $walletModel->findByTransactionCodeForUser($depositCode, (int) Auth::id())
+            : $walletModel->latestPendingDepositByUser((int) Auth::id());
+
+        $pendingWalletTopup = $this->recoverPendingWalletTopup($pendingWalletTopup, $walletModel);
+
+        if (($pendingWalletTopup['status'] ?? '') !== 'pending') {
+            $pendingWalletTopup = null;
+        }
+
+        $walletSummary = $walletModel->summaryByUser((int) Auth::id());
+        $walletTransactions = $walletModel->recentByUser((int) Auth::id(), 20);
 
         $this->view('profile/index', [
             'title' => $isAdminRole ? 'Tài khoản quản trị viên' : 'Tài khoản khách hàng',
@@ -73,8 +87,11 @@ class ProfileController extends Controller
             'resetPending' => $resetPending,
             'resetExpiresLabel' => $resetExpiresLabel,
             'rankSummary' => $rankSummary,
-            'walletSummary' => $walletModel->summaryByUser((int) Auth::id()),
-            'walletTransactions' => $walletModel->recentByUser((int) Auth::id(), 20),
+            'walletSummary' => $walletSummary,
+            'walletTransactions' => $walletTransactions,
+            'pendingWalletTopup' => $pendingWalletTopup,
+            'sepayConfig' => sepay_config(true),
+            'walletTopupAutoOpen' => $depositCode !== '' && !empty($pendingWalletTopup),
             'bannerMeta' => $bannerMeta,
         ]);
     }
@@ -85,9 +102,8 @@ class ProfileController extends Controller
         $this->requirePostWithCsrf('profile?tab=wallet-log');
         $this->throttleProfileAction('profile_sensitive', 'profile?tab=wallet-log');
 
-        $allowedMethods = ['bank_transfer', 'momo', 'zalopay', 'card'];
         $amountDigits = preg_replace('/\D+/', '', (string) ($_POST['amount'] ?? '')) ?? '';
-        $paymentMethod = sanitize_text((string) ($_POST['payment_method'] ?? 'bank_transfer'), 40);
+        $paymentMethod = 'bank_transfer';
         $note = sanitize_text((string) ($_POST['note'] ?? ''), 160);
 
         set_old([
@@ -107,23 +123,127 @@ class ProfileController extends Controller
             redirect('profile?tab=wallet-log');
         }
 
-        if (!in_array($paymentMethod, $allowedMethods, true)) {
-            $paymentMethod = 'bank_transfer';
-        }
-
-        $walletModel = new WalletTransaction($this->config);
-        $transaction = $walletModel->createInstantDeposit((int) Auth::id(), $amount, $paymentMethod, $note);
-
-        if ($transaction === null) {
-            flash('danger', 'Không thể nạp số dư lúc này. Vui lòng thử lại.');
+        if (!is_sepay_configured(true)) {
+            flash('danger', 'Kênh QR SePay chưa được cấu hình đầy đủ. Bạn vui lòng liên hệ quản trị viên để bật nạp ví bằng chuyển khoản.');
             redirect('profile?tab=wallet-log');
         }
 
-        $this->refreshAuthUser(new User($this->config));
-        clear_old();
+        $walletModel = new WalletTransaction($this->config);
+        $transaction = $walletModel->createPendingDepositRequest((int) Auth::id(), $amount, $paymentMethod, $note);
 
-        flash('success', 'Nạp thành công ' . format_money($amount) . '. Mã giao dịch: ' . $transaction['transaction_code']);
-        redirect('profile?tab=wallet-log');
+        if ($transaction === null) {
+            flash('danger', 'Không thể tạo mã nạp ví lúc này. Bạn thử lại giúp mình sau ít phút nhé.');
+            redirect('profile?tab=wallet-log');
+        }
+
+        clear_old();
+        redirect('profile?tab=wallet-log&deposit=' . rawurlencode((string) $transaction['transaction_code']));
+    }
+
+    public function walletStatus(string $transactionCode): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (!Auth::check()) {
+            $this->jsonResponse(401, [
+                'success' => false,
+                'message' => 'unauthenticated',
+            ]);
+        }
+
+        $walletModel = new WalletTransaction($this->config);
+        $transaction = $walletModel->findByTransactionCodeForUser($transactionCode, (int) Auth::id());
+        $transaction = $this->recoverPendingWalletTopup($transaction, $walletModel);
+
+        if (!$transaction) {
+            $this->jsonResponse(404, [
+                'success' => false,
+                'message' => 'not_found',
+            ]);
+        }
+
+        $summary = $walletModel->summaryByUser((int) Auth::id());
+
+        $this->jsonResponse(200, [
+            'success' => true,
+            'transaction' => [
+                'transaction_code' => (string) ($transaction['transaction_code'] ?? ''),
+                'status' => (string) ($transaction['status'] ?? 'pending'),
+                'amount' => round((float) ($transaction['amount'] ?? 0), 2),
+                'amount_formatted' => format_money((float) ($transaction['amount'] ?? 0)),
+                'completed_at' => $transaction['completed_at'] ?? null,
+                'created_at' => $transaction['created_at'] ?? null,
+                'balance_after' => round((float) ($transaction['balance_after'] ?? 0), 2),
+                'balance_after_formatted' => format_money((float) ($transaction['balance_after'] ?? 0)),
+            ],
+            'wallet' => [
+                'current_balance' => round((float) ($summary['current_balance'] ?? 0), 2),
+                'current_balance_formatted' => format_money((float) ($summary['current_balance'] ?? 0)),
+            ],
+        ]);
+    }
+
+    private function recoverPendingWalletTopup(?array $transaction, WalletTransaction $walletModel): ?array
+    {
+        if (!$transaction) {
+            return null;
+        }
+
+        $transactionCode = trim((string) ($transaction['transaction_code'] ?? ''));
+        if ($transactionCode === '') {
+            return $transaction;
+        }
+
+        $reconciled = $walletModel->reconcilePendingDepositByUser($transactionCode, (int) Auth::id());
+        if (!$reconciled || (string) ($reconciled['status'] ?? '') !== 'pending') {
+            return $reconciled;
+        }
+
+        $webhookEvent = $walletModel->latestWebhookEventByTransactionCode('sepay', $transactionCode);
+        if (!$webhookEvent) {
+            return $reconciled;
+        }
+
+        $payload = json_decode((string) ($webhookEvent['payload'] ?? ''), true);
+        if (!is_array($payload)) {
+            return $reconciled;
+        }
+
+        $sepayService = new SePayService();
+        if (!$sepayService->isIncomingTransfer($payload)) {
+            return $reconciled;
+        }
+
+        $eventTransactionCode = $sepayService->extractTransactionCode($payload);
+        if ($eventTransactionCode === '' || strtolower($eventTransactionCode) !== strtolower($transactionCode)) {
+            return $reconciled;
+        }
+
+        $amount = $sepayService->extractAmount($payload);
+        if ($amount <= 0) {
+            return $reconciled;
+        }
+
+        $result = $walletModel->completePendingDepositByCode(
+            $transactionCode,
+            $amount,
+            $payload,
+            'sepay',
+            $sepayService->externalReference($payload)
+        );
+
+        $status = (string) ($result['status'] ?? '');
+        if (in_array($status, ['completed', 'already_completed'], true)) {
+            $walletModel->upsertWebhookEvent(
+                'sepay',
+                trim((string) ($webhookEvent['event_key'] ?? ('recover:' . strtolower($transactionCode)))),
+                $payload,
+                'completed',
+                strtolower($transactionCode)
+            );
+        }
+
+        return $walletModel->findByTransactionCodeForUser($transactionCode, (int) Auth::id());
     }
 
     public function update(): void
@@ -314,6 +434,13 @@ class ProfileController extends Controller
         }
 
         return round($resolved, 3);
+    }
+
+    private function jsonResponse(int $statusCode, array $payload): void
+    {
+        http_response_code($statusCode);
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
     }
 
     public function changePassword(): void

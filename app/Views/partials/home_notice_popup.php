@@ -2,6 +2,7 @@
 $homeNoticeConfig = is_array($homeNoticeConfig ?? null) ? $homeNoticeConfig : [];
 $homeNoticeTitle = trim((string) ($homeNoticeConfig['title'] ?? 'Thông báo'));
 $homeNoticeSubtitle = trim((string) ($homeNoticeConfig['subtitle'] ?? ''));
+$homeNoticeBrand = app_site_name();
 $homeNoticeStorageKey = trim((string) ($homeNoticeConfig['storage_key'] ?? 'zenox-home-notice-hidden-until'));
 $homeNoticeSnoozeHours = max(1, (int) ($homeNoticeConfig['snooze_hours'] ?? 2));
 $homeNoticeSnoozeLabel = trim((string) ($homeNoticeConfig['snooze_label'] ?? 'Không hiển thị lại trong 2 giờ'));
@@ -38,7 +39,7 @@ $homeNoticeCards = is_array($homeNoticeConfig['cards'] ?? null) ? $homeNoticeCon
 
         <div class="home-notice-popup__hero">
             <div>
-                <span class="home-notice-popup__eyebrow">ZenoxDigital</span>
+                <span class="home-notice-popup__eyebrow"><?= e($homeNoticeBrand) ?></span>
                 <h2 id="homeNoticePopupTitle"><?= e($homeNoticeTitle) ?></h2>
                 <?php if ($homeNoticeSubtitle !== ''): ?>
                     <p id="homeNoticePopupSubtitle"><?= e($homeNoticeSubtitle) ?></p>

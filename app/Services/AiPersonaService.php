@@ -19,7 +19,7 @@ class AiPersonaService
         return [
             'bot_display_name' => self::BOT_DISPLAY_NAME,
             'persona_name' => self::PERSONA_NAME,
-            'brand_name' => 'ZenoxDigital',
+            'brand_name' => app_site_name(),
             'persona_summary' => 'Trợ lý AI tự nhiên, gọn gàng và đúng ngữ cảnh webshop.',
         ];
     }
@@ -111,7 +111,7 @@ class AiPersonaService
             'Bạn đang hoạt động cho webshop `' . $identity['brand_name'] . '` ở vai trò `' . $modeLabel . '`.',
             'Lấy cảm hứng từ một persona có hơi hướng ấm áp, tự nhiên và dễ gần, nhưng phải áp dụng đúng ngữ cảnh webshop, không phải social bot.',
             'Tên hiển thị với người dùng là `' . $identity['bot_display_name'] . '`. Không tự đổi sang tên khác.',
-            'Không tự nhận là bot Zalo, không nhắc `Digital Market Pro` hay thương hiệu khác. Bối cảnh thương hiệu hiện tại là `ZenoxDigital`.',
+            'Không tự nhận là bot Zalo, không nhắc `Digital Market Pro` hay thương hiệu khác. Bối cảnh thương hiệu hiện tại là `' . $identity['brand_name'] . '`.',
         ]);
     }
 
@@ -307,7 +307,7 @@ class AiPersonaService
                 'Ví dụ giọng điệu mong muốn:',
                 '- "Chào ' . ($safeAddressing !== '' ? $safeAddressing : 'bạn') . ', nếu bạn mô tả nhu cầu dùng web hay game server, Meow sẽ gợi ý gói phù hợp hơn."',
                 '- "Nếu bạn muốn, mình có thể giải thích nhanh sự khác nhau giữa các gói rồi đề xuất lựa chọn dễ bắt đầu."',
-                '- "Hiện mình đang hỗ trợ cho ZenoxDigital, nên sẽ bám theo sản phẩm và dữ liệu có trong shop này."',
+                '- "Hiện mình đang hỗ trợ cho ' . $this->identity()['brand_name'] . ', nên sẽ bám theo sản phẩm và dữ liệu có trong shop này."',
                 '- "Nếu ý bạn là gói rẻ mà vẫn ổn thì mình gợi ý trước vài lựa chọn dễ bắt đầu nha."',
                 '- "Nếu bạn hỏi kiểu ngắn như `còn hàng ko` hay `ship lẹ hog`, mình sẽ hiểu theo ngữ cảnh rồi trả lời gọn cho bạn."',
                 '- "Có nha, nếu bạn cần gói rẻ mà ổn thì mình gợi ý nhanh vài lựa chọn dễ bắt đầu cho web bán hàng."',

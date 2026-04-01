@@ -69,6 +69,31 @@ function app_setting(string $key, $default = null)
     return $settings[$key];
 }
 
+function normalize_public_brand_name(?string $value, string $fallback = 'ZenoDigital'): string
+{
+    $candidate = trim((string) $value);
+    if ($candidate === '') {
+        return $fallback;
+    }
+
+    $compact = strtolower(preg_replace('/[^a-z0-9]+/i', '', $candidate) ?? '');
+    $legacyMap = [
+        'zenoxdigital' => $fallback,
+        'zenodigital' => $fallback,
+        'digitalmarketpro' => $fallback,
+        'digitalmarket' => $fallback,
+    ];
+
+    return $legacyMap[$compact] ?? $candidate;
+}
+
+function app_site_name(): string
+{
+    return normalize_public_brand_name(
+        (string) app_setting('site_name', config('app.name', 'ZenoDigital'))
+    );
+}
+
 function google_oauth_config(bool $refresh = false): array
 {
     $oauthConfig = (array) config('oauth.google', []);
@@ -112,6 +137,71 @@ function is_google_oauth_configured(bool $refresh = false): bool
     return !empty($googleConfig['enabled'])
         && $googleConfig['client_id'] !== ''
         && $googleConfig['client_secret'] !== '';
+}
+
+function sepay_config(bool $refresh = false): array
+{
+    $settings = app_settings($refresh);
+    $enabled = value_is_truthy($settings['sepay_enabled'] ?? '0');
+    $bankCode = trim((string) ($settings['sepay_bank_code'] ?? ''));
+    $accountNumber = trim((string) ($settings['payment_bank_account'] ?? ''));
+    $accountName = trim((string) ($settings['payment_bank_owner'] ?? ''));
+    $webhookToken = trim((string) ($settings['sepay_webhook_token'] ?? ''));
+    $qrTemplate = validate_enum(
+        strtolower(trim((string) ($settings['sepay_qr_template'] ?? 'compact'))),
+        ['', 'compact', 'qronly'],
+        'compact'
+    );
+
+    return [
+        'enabled' => $enabled,
+        'bank_code' => $bankCode,
+        'account_number' => $accountNumber,
+        'account_name' => $accountName,
+        'webhook_token' => $webhookToken,
+        'qr_template' => $qrTemplate,
+    ];
+}
+
+function is_sepay_configured(bool $refresh = false): bool
+{
+    $config = sepay_config($refresh);
+
+    return !empty($config['enabled'])
+        && $config['bank_code'] !== ''
+        && $config['account_number'] !== ''
+        && $config['webhook_token'] !== '';
+}
+
+function sepay_webhook_url(bool $refresh = false): string
+{
+    $config = sepay_config($refresh);
+    if ($config['webhook_token'] === '') {
+        return base_url('payments/sepay/webhook');
+    }
+
+    return base_url('payments/sepay/webhook?token=' . rawurlencode($config['webhook_token']));
+}
+
+function sepay_qr_image_url(float $amount, string $transferContent, bool $refresh = false): string
+{
+    $config = sepay_config($refresh);
+    if ($config['bank_code'] === '' || $config['account_number'] === '') {
+        return '';
+    }
+
+    $query = [
+        'acc' => $config['account_number'],
+        'bank' => $config['bank_code'],
+        'amount' => (int) round(max(0, $amount)),
+        'des' => trim($transferContent),
+    ];
+
+    if ($config['qr_template'] !== '') {
+        $query['template'] = $config['qr_template'];
+    }
+
+    return 'https://qr.sepay.vn/img?' . http_build_query($query);
 }
 
 function app_env(): string
@@ -239,6 +329,62 @@ function base_url(string $path = ''): string
 {
     $url = rtrim(config('app.url', ''), '/');
     return $path ? $url . '/' . ltrim($path, '/') : $url;
+}
+
+function current_request_path(): string
+{
+    $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $scriptName = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+
+    if ($scriptName !== '/' && str_starts_with($uri, $scriptName)) {
+        $uri = substr($uri, strlen($scriptName));
+    }
+
+    $uri = '/' . trim($uri, '/');
+
+    return $uri === '//' ? '/' : $uri;
+}
+
+function current_url(bool $includeQuery = false): string
+{
+    $path = current_request_path();
+    $url = $path === '/' ? base_url('/') : base_url(ltrim($path, '/'));
+
+    if ($includeQuery) {
+        $queryString = trim((string) ($_SERVER['QUERY_STRING'] ?? ''));
+        if ($queryString !== '') {
+            $url .= '?' . $queryString;
+        }
+    }
+
+    return $url;
+}
+
+function seo_trim_text(?string $value, int $limit = 160): string
+{
+    $text = trim(preg_replace('/\s+/u', ' ', strip_tags((string) $value)) ?? '');
+    if ($text === '') {
+        return '';
+    }
+
+    if (mb_strlen($text, 'UTF-8') <= $limit) {
+        return $text;
+    }
+
+    return rtrim(mb_substr($text, 0, max(1, $limit - 1), 'UTF-8')) . '…';
+}
+
+function seo_default_description(): string
+{
+    $siteName = app_site_name();
+
+    return seo_trim_text(
+        (string) app_setting(
+            'seo_default_description',
+            $siteName . ' cung cấp Cloud VPS, Cloud Server và dịch vụ số theo hướng cloud-first cho website, app và workload production.'
+        ),
+        170
+    );
 }
 
 function e(?string $value): string

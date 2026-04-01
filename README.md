@@ -1,377 +1,360 @@
 # ZenoxDigital
 
 ![PHP MVC](https://img.shields.io/badge/PHP-MVC-777BB4?logo=php&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?logo=mysql&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-MariaDB-4479A1?logo=mysql&logoColor=white)
 ![Bootstrap 5](https://img.shields.io/badge/Bootstrap-5-7952B3?logo=bootstrap&logoColor=white)
-![Cloud First](https://img.shields.io/badge/Domain-Cloud--First-0F766E)
-![AI Copilot](https://img.shields.io/badge/AI-Meow%20Copilot-0EA5E9)
+![AI Bridge](https://img.shields.io/badge/AI-Meow%20Copilot-0EA5E9)
 ![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)
 
-ZenoxDigital là một web platform bán dịch vụ số theo định hướng cloud-first, tập trung vào các gói Cloud Server / VPS và đi kèm một hệ thống quản trị backoffice tương đối đầy đủ. Dự án được xây dựng theo kiến trúc PHP MVC, có storefront cho khách hàng, admin dashboard cho vận hành, cùng các thành phần AI hỗ trợ tư vấn và quản trị dữ liệu theo ngữ cảnh thực tế của shop.
+ZenoxDigital is a cloud-first digital services storefront and backoffice dashboard built with a custom PHP MVC stack. The project focuses on selling Cloud VPS / Cloud Server plans, managing operational workflows for digital products, and integrating AI assistance into both the public storefront and the admin dashboard.
 
-README này được viết theo hướng phù hợp để:
+This repository is prepared for three parallel purposes:
 
-- đưa lên GitHub như một project showcase
-- phục vụ báo cáo học thuật / đồ án
-- thể hiện năng lực full-stack, tư duy hệ thống và tổ chức nghiệp vụ khi dùng trong CV hoặc portfolio
+- academic reporting / capstone demonstration
+- technical portfolio and CV showcase
+- a public GitHub codebase that another developer can review and run locally
 
-> Preview boards dưới đây là ảnh minh họa được chuẩn bị sẵn cho GitHub showcase. Khi cần, có thể thay trực tiếp bằng screenshot thật từ hệ thống đang chạy.
+## Overview
 
-<p align="center">
-  <img src="docs/screenshots/homepage-preview.svg" alt="ZenoxDigital Storefront Preview" width="48%" />
-  <img src="docs/screenshots/admin-dashboard-preview.svg" alt="ZenoxDigital Admin Dashboard Preview" width="48%" />
-</p>
-<p align="center">
-  <img src="docs/screenshots/ai-copilot-preview.svg" alt="ZenoxDigital AI Copilot Preview" width="48%" />
-  <img src="docs/screenshots/sql-manager-preview.svg" alt="ZenoxDigital SQL Manager Preview" width="48%" />
-</p>
+ZenoxDigital models a digital commerce system with two main surfaces:
 
-## Mục lục
+- a customer-facing storefront for browsing and purchasing digital service packages
+- an admin dashboard for operating products, orders, users, coupons, payments, feedback, and AI-assisted workflows
 
-- [1. Tổng quan dự án](#1-tổng-quan-dự-án)
-- [2. Mục tiêu dự án](#2-mục-tiêu-dự-án)
-- [3. Tính năng chính](#3-tính-năng-chính)
-- [4. Kiến trúc hệ thống](#4-kiến-trúc-hệ-thống)
-- [5. Công nghệ sử dụng](#5-công-nghệ-sử-dụng)
-- [6. Các module nghiệp vụ](#6-các-module-nghiệp-vụ)
-- [7. AI / Meow Copilot](#7-ai--meow-copilot)
-- [8. Điểm nhấn kỹ thuật cho học thuật và CV](#8-điểm-nhấn-kỹ-thuật-cho-học-thuật-và-cv)
-- [9. Cài đặt và chạy local](#9-cài-đặt-và-chạy-local)
-- [10. Hướng dẫn sử dụng nhanh](#10-hướng-dẫn-sử-dụng-nhanh)
-- [11. Hình ảnh minh họa](#11-hình-ảnh-minh-họa)
-- [12. Roadmap](#12-roadmap)
-- [13. Đóng góp](#13-đóng-góp)
-- [14. Giấy phép](#14-giấy-phép)
+The product direction is intentionally cloud-first: Cloud VPS and Cloud Server plans are the main catalog focus, while additional digital products such as game top-ups or wallet services support a broader marketplace scenario.
 
-## 1. Tổng quan dự án
+From a technical perspective, the project emphasizes:
 
-ZenoxDigital mô phỏng một hệ thống web shop dịch vụ số có cấu trúc tương đối đầy đủ, trong đó mảng sản phẩm cốt lõi là Cloud/VPS. Ngoài storefront cho khách hàng, dự án còn phát triển một dashboard quản trị để xử lý sản phẩm, đơn hàng, người dùng, coupon, feedback, cài đặt và một lớp AI Copilot hỗ trợ truy vấn, phân tích và thao tác backoffice theo quyền.
+- modular PHP MVC organization instead of controller-heavy procedural code
+- business logic separation into Models and Services
+- role-aware backoffice behavior
+- AI that is constrained by permissions, session context, and available business data
 
-Về mặt sản phẩm, dự án hướng tới việc trả lời 3 câu hỏi:
+## Problem Statement / Project Goal
 
-- một web shop dịch vụ số cần những module nghiệp vụ nào để vận hành thực tế
-- làm thế nào để tổ chức code theo hướng dễ mở rộng hơn so với việc viết dồn logic vào controller
-- AI có thể hỗ trợ vận hành dashboard như một copilot nội bộ đến mức nào nếu bị ràng buộc bởi quyền, dữ liệu thật và guardrail
+Many student e-commerce projects stop at a simple catalog and checkout UI. ZenoxDigital was designed to go further by exploring how a digital services store can be modeled as an operational system, not only as a landing page.
 
-## 2. Mục tiêu dự án
+The project goals are:
 
-### Mục tiêu học thuật
+- build a storefront for digital service discovery and purchase flow
+- model key commerce entities such as products, orders, users, coupons, wallet transactions, and feedback
+- implement a usable admin dashboard with role-aware access and operational modules
+- integrate AI as a support layer for customer guidance and backoffice assistance, without turning AI into an unrestricted write path
+- practice system design concerns such as session management, 2FA, audit logging, rate limiting, SQL guardrails, and schema health checks
 
-- Xây dựng một hệ thống web có đầy đủ lớp `frontend - business logic - admin dashboard - data management`
-- Mô hình hóa các thực thể nghiệp vụ cốt lõi như sản phẩm, danh mục, đơn hàng, người dùng, coupon, feedback, ví và giao dịch
-- Thực hành phân tách mã nguồn theo `Controller / Model / Service` trong một codebase PHP MVC thuần
-- Bổ sung các yếu tố hệ thống như phân quyền, session, rate limit, CSRF, audit log và module health
+## Key Features
 
-### Mục tiêu thực tiễn
+### Storefront
 
-- Tạo một storefront có thể trình bày sản phẩm số theo hướng dễ mua, dễ lọc và dễ hiểu
-- Xây dựng một dashboard admin đủ rõ để quản trị dữ liệu vận hành
-- Tích hợp AI vào hai ngữ cảnh thực tế:
-  - chatbot hỗ trợ khách hàng
-  - copilot hỗ trợ quản trị trong dashboard admin
-- Dùng dữ liệu thật của shop để trả lời, thay vì chỉ hiển thị các phản hồi mẫu
-
-## 3. Tính năng chính
-
-### Khách hàng
-
-- Trang chủ giới thiệu sản phẩm và nhóm dịch vụ theo hướng cloud-first
-- Danh sách sản phẩm có tìm kiếm, lọc, sắp xếp và phân trang
-- Trang chi tiết sản phẩm có mô tả, thông số, gallery và gợi ý sản phẩm liên quan
-- Đăng ký, đăng nhập, quên mật khẩu và đăng nhập Google OAuth
-- Hồ sơ người dùng với thông tin cá nhân, avatar, lịch sử mua hàng và khu vực ví
-- Security Center với đổi mật khẩu, quản lý phiên, 2FA và một số thao tác bảo mật nhạy cảm
-- Chatbot hỗ trợ khách hàng và tiếp nhận feedback từ giao diện public
+- Cloud-first homepage with featured cloud categories and product highlights
+- product catalog with search, filtering, sorting, and pagination
+- product detail pages with specs, related items, and checkout flow
+- user authentication with email/password and Google OAuth
+- user profile with wallet, order history, security center, sessions, and 2FA
+- customer-facing AI widget for product guidance, FAQ support, feedback capture, and order/account help
 
 ### Admin Dashboard
 
-- Dashboard tổng quan với KPI vận hành và các block dữ liệu chính
-- Quản lý sản phẩm: CRUD, trạng thái hiển thị, ảnh đại diện và gallery
-- Quản lý danh mục: CRUD và chặn xóa khi còn liên kết dữ liệu
-- Quản lý đơn hàng: xem danh sách, lọc trạng thái, xem chi tiết, cập nhật trạng thái, xóa mềm
-- Quản lý người dùng: tạo/sửa/xóa, phân quyền, khóa/mở tài khoản
-- Quản lý coupon: tạo, bật/tắt, theo dõi tình trạng sử dụng
-- Quản lý feedback khách hàng
-- Quản lý cài đặt hệ thống, rank, audit log và SQL Manager
+- KPI-based dashboard with product, order, coupon, feedback, revenue, and user snapshots
+- product, category, order, user, coupon, rank, feedback, payment, audit-log, and SQL Manager modules
+- role-aware backoffice scope for `admin` and limited `staff`
+- Meow Copilot panel embedded into the admin UI
+- admin AI workflows for dashboard summary, operational queries, and guarded mutation previews
 
-### AI Copilot
+### AI / Meow Copilot
 
-- Meow chatbot cho khách hàng trên storefront
-- Meow Copilot cho admin dashboard với progress state, data freshness và role-aware behavior
-- Fast-path đọc dữ liệu thật cho các intent rõ như đơn pending, doanh thu, feedback, coupon, top sản phẩm
-- Mutation admin có kiểm soát theo flow `preview -> confirm -> execute -> audit`
+- customer chatbot for product guidance, FAQ, feedback, and basic order/account support
+- admin copilot for dashboard summary, order status insight, coupon/product recommendations, and controlled backoffice actions
+- server-side AI bridge integration with runtime metadata such as provider, source, mode, and fallback state
+- mutation guardrail flow: `preview -> confirm -> execute -> audit`
+- role-aware behavior: `guest`, `customer`, `admin`, `staff`
 
-### Công cụ quản trị dữ liệu
+### Operations and Data Safety
 
-- SQL Manager để đọc dữ liệu, preview thao tác SQL và kiểm tra schema theo guardrail
-- Audit log để theo dõi hành động quản trị
-- Module health / schema health để ngăn thao tác trên module có trạng thái không an toàn
+- SQL Manager with import preflight, transaction-aware DML handling, and error reporting
+- schema health checks and module health guards to isolate broken modules safely
+- admin audit logging for backoffice actions and AI-assisted mutations
+- rate limiting for login, profile-sensitive flows, and AI endpoints
+- session tracking, backup codes, and 2FA flows for user security
 
-## 4. Kiến trúc hệ thống
+## System Modules
 
-ZenoxDigital đi theo kiến trúc PHP MVC thuần, kết hợp thêm lớp `Service` để giảm việc controller ôm quá nhiều logic.
+The current codebase includes the following business modules:
 
-### Cấu trúc chính
+- `Products`: digital service catalog, pricing, specs, media, and storefront presentation
+- `Categories`: cloud-first grouping and storefront segmentation
+- `Orders`: order lifecycle, status tracking, and dashboard statistics
+- `Users`: authentication, profile, role assignment, status, and security data
+- `Wallet Transactions`: deposit/spend history and wallet balance operations
+- `Payments`: admin payment overview plus SePay webhook-based wallet top-up processing
+- `Coupons`: campaign and discount management
+- `Customer Feedback`: support and post-purchase feedback records
+- `Rank Management`: configurable user rank thresholds and coupon-related incentives
+- `Audit Logs`: traceability for admin-side actions
+- `SQL Manager`: guarded SQL inspection and import tooling for administrators
+- `AI Modules`: bridge, context builder, actor resolver, guardrails, session persistence, sales recommendations, and admin mutation orchestration
+
+## Architecture / Project Structure
+
+ZenoxDigital uses a custom PHP MVC structure with an explicit Service layer for business workflows.
 
 ```text
-ZenoxDigital
-├─ public/              # entrypoint, assets, uploads
+ZenoxDigital/
 ├─ app/
-│  ├─ Core/             # App, Controller, Model, Database, Auth
-│  ├─ Controllers/      # controller storefront và admin
-│  ├─ Models/           # truy cập dữ liệu qua PDO
-│  ├─ Services/         # business services, AI services, guardrails
-│  ├─ Helpers/          # helper chung, security helpers, formatting
-│  └─ Views/            # layouts, partials, storefront, admin dashboard
-├─ config/              # config app, routes, capabilities
-├─ database/            # schema SQL
-└─ docs/                # tài liệu AI và implementation notes
+│  ├─ Controllers/       # storefront and admin controllers
+│  ├─ Core/              # App, Controller, Auth, Database, Model, View
+│  ├─ Models/            # PDO-backed data access
+│  ├─ Services/          # AI, payments, schema health, SQL import, domain services
+│  └─ Views/             # storefront, auth, profile, admin, partials, layouts
+├─ config/               # routes, config, AI capability catalog
+├─ database/             # schema and demo seed SQL
+├─ docs/                 # AI design notes, screenshots, presentation notes
+├─ public/
+│  ├─ assets/            # CSS, JavaScript
+│  ├─ images/
+│  └─ uploads/
+└─ storage/              # runtime storage and temporary artifacts
 ```
 
-### Phân lớp xử lý
+### Architectural Notes
 
-- `Views / frontend`: render giao diện storefront và dashboard admin
-- `Controllers`: nhận request, điều phối luồng, trả view hoặc JSON
-- `Models`: tương tác database bằng PDO prepared statements
-- `Services`: xử lý nghiệp vụ và AI-related logic như context, guardrail, progress, mutation workflow
-- `Admin Dashboard`: vùng backoffice riêng cho vận hành
-- `AI services`: tập trung các logic như actor resolution, context building, bridge integration, permission map, mutation draft và recommendation
+- routing is handled by a lightweight custom dispatcher in [App.php](C:\xampp\htdocs\ZenoxDigital\app\Core\App.php)
+- data access is built on PDO with prepared statements via [Database.php](C:\xampp\htdocs\ZenoxDigital\app\Core\Database.php)
+- controllers coordinate flow, while business-heavy logic is pushed into Services where appropriate
+- the admin side is not a separate application; it is a dedicated backoffice surface inside the same codebase
+- AI integration is server-side and does not expose provider keys to the browser
 
-### Tư duy triển khai
+## Tech Stack
 
-- Tránh để controller chứa toàn bộ business logic
-- Tách riêng phần AI để không trộn lẫn với flow CRUD truyền thống
-- Giữ quyền kiểm soát mutation ở backend, không để AI trở thành đường ghi dữ liệu tự do
+| Layer | Technology |
+|---|---|
+| Backend | PHP 8.x, custom PHP MVC |
+| Database | MySQL / MariaDB |
+| Data access | PDO prepared statements |
+| Frontend | HTML, Bootstrap 5, vanilla JavaScript |
+| Authentication | Session-based auth, Google OAuth 2.0 |
+| Security | CSRF, rate limiting, session tracking, 2FA, audit logging |
+| AI integration | External AI bridge + local fallback strategy |
+| Payment integration | SePay webhook for wallet top-up verification |
 
-## 5. Công nghệ sử dụng
+## AI / Meow Copilot
 
-Stack dưới đây phản ánh đúng những gì dự án đang dùng:
+AI is a real subsystem in this project, but it is intentionally scoped and guarded.
 
-- PHP 8.x
-- PHP MVC thuần
-- MySQL / MariaDB
-- PDO Prepared Statements
-- HTML5 / CSS3
-- Bootstrap 5
-- JavaScript thuần
-- Google OAuth 2.0
-- Session-based authentication
-- AI bridge integration cho chatbot / copilot
+### What is implemented today
 
-## 6. Các module nghiệp vụ
+- customer-side AI widget on the storefront
+- admin-side Meow Copilot inside the dashboard
+- AI session persistence for admin conversations
+- actor resolution based on backend session/auth state
+- AI context building from live shop data
+- recommendation support for cloud-first products and coupons
+- controlled admin mutations for selected modules with audit trail
 
-- `Products`: quản lý danh sách dịch vụ số, giá, mô tả, specs, ảnh và trạng thái hiển thị
-- `Categories`: phân nhóm sản phẩm để storefront và admin quản lý dễ hơn
-- `Orders`: lưu và theo dõi đơn hàng, trạng thái xử lý, tổng tiền, item đã mua
-- `Users`: quản lý tài khoản, role, trạng thái, hồ sơ và các thao tác admin
-- `Coupons`: tạo và quản lý mã giảm giá theo trạng thái, thời hạn và giới hạn sử dụng
-- `Customer Feedback`: tiếp nhận góp ý/hỗ trợ sau bán từ phía khách hàng
-- `Wallet / Transactions`: quản lý số dư và lịch sử giao dịch ví
-- `Payments`: khu vực quản trị thanh toán/giao dịch trong dashboard
-- `Settings`: các cấu hình hệ thống và thông tin website
-- `Rank Management`: cấu hình ngưỡng/rule xếp hạng người dùng
-- `Audit Log`: lưu vết hành động quản trị phục vụ kiểm tra và truy vết
-- `SQL Manager`: công cụ hỗ trợ đọc dữ liệu và kiểm tra schema theo guardrail
-- `AI Copilot`: lớp hỗ trợ AI cho storefront và admin dashboard
+### What is intentionally constrained
 
-## 7. AI / Meow Copilot
+- AI does not have unrestricted SQL write access
+- high-risk domains such as profit optimization and capacity analysis are not claimed as complete
+- some admin modules remain read-only or preview-only under AI guardrails
+- fallback exists as a technical safety mechanism, not as the intended primary runtime
 
-AI là một phần quan trọng của dự án, nhưng được triển khai theo hướng có kiểm soát thay vì “chatbot nói chung chung”.
+### Current AI State
 
-### AI hiện có trong hệ thống
+According to the implementation tracking in `docs/AI_IMPLEMENTATION_STATUS.md` and `docs/AI_FEATURE_PHASES_CHECKLIST.md`:
 
-- `Chatbot khách hàng`: hỗ trợ hỏi đáp, tư vấn sản phẩm, tra cứu ngữ cảnh cơ bản và nhận feedback
-- `Admin AI Copilot`: hỗ trợ đọc dữ liệu shop, trả lời câu hỏi vận hành, gợi ý bán hàng và xử lý một số mutation backoffice theo quyền
+- Phase 0 to Phase 5 are implemented
+- customer support chat, feedback capture, order/account help, admin copilot, and preliminary sales recommendations are present
+- Phase 6 to Phase 8 remain future work because the current schema still lacks fields such as `cost_price`, `stock_qty`, `capacity_limit`, `capacity_used`, and `min_margin_percent`
 
-### Những điểm đáng chú ý
+This matters for public readers: the AI layer is meaningful and data-aware, but it is not being presented as a fully autonomous production-ready operations agent.
 
-- Role-aware behavior:
-  - phân biệt `guest`, `customer`, `admin`, `staff`
-  - thay đổi giọng điệu, phạm vi dữ liệu và quyền thao tác theo actor thực tế
-- Data-aware:
-  - sử dụng dữ liệu thật từ các model của shop
-  - ưu tiên fast-path backend cho các câu hỏi rõ ràng
-- Guardrail-aware:
-  - không cho AI mutation bừa
-  - dùng `permission + preview + confirm + audit + module health`
-- Context-aware:
-  - có admin context builder, session persistence, progress state và freshness ngắn hạn
+## Security / Access Control
 
-### Giới hạn hiện tại
+ZenoxDigital includes several security and governance features that are relevant both academically and technically:
 
-- Một số module rủi ro cao vẫn được giữ ở `preview-only` hoặc `read-only`
-- Các câu hỏi về lợi nhuận sâu, margin hoặc capacity chưa thể trả lời đầy đủ nếu schema chưa có đủ dữ liệu nền
-- AI không thay thế logic nghiệp vụ chính; mọi ghi dữ liệu vẫn phải đi qua backend rule hiện có
+- session-based authentication with tracked login sessions
+- optional Google OAuth login
+- 2FA enable/disable/reset flow with backup codes
+- role-aware permissions in [Auth.php](C:\xampp\htdocs\ZenoxDigital\app\Core\Auth.php)
+- rate limiting for login, registration, password reset, profile-sensitive actions, and AI endpoints
+- CSRF protection on state-changing requests
+- admin audit logging for backoffice actions
+- SQL Manager restricted to admin and backed by import/query safeguards
+- schema health and module health guards to avoid cascading failures when a data module becomes unsafe
 
-## 8. Điểm nhấn kỹ thuật cho học thuật và CV
+## Installation / Run Locally
 
-Đây là những điểm có giá trị khi dùng dự án cho báo cáo, portfolio hoặc phỏng vấn:
-
-- Xây dựng một hệ thống web bán dịch vụ số có cả storefront và backoffice
-- Tổ chức code theo `Controller / Model / Service` thay vì chỉ ghép trực tiếp vào view/controller
-- Thiết kế role-based access cho khách hàng, admin và staff
-- Quản lý session, CSRF, rate limit, 2FA và các thao tác nhạy cảm
-- Mô hình hóa dữ liệu nghiệp vụ tương đối đầy đủ cho e-commerce dạng digital services
-- Thiết kế admin dashboard với các module CRUD, thống kê và công cụ vận hành
-- Tích hợp AI theo hai ngữ cảnh thực tế: hỗ trợ khách hàng và copilot nội bộ
-- Áp dụng guardrail cho AI mutation: permission, preview, confirm, execute, audit
-- Theo dõi module health để giảm rủi ro thao tác vào dữ liệu/schemas không an toàn
-- Tư duy cloud-first trong định vị sản phẩm, recommendation và homepage focus
-
-### Giá trị học thuật
-
-- Thể hiện khả năng phân tích và mô hình hóa nghiệp vụ
-- Cho thấy cách chuyển từ yêu cầu chức năng sang hệ thống có cấu trúc
-- Có thể dùng làm minh chứng cho các chủ đề:
-  - phân tích thiết kế hệ thống thông tin
-  - lập trình web MVC
-  - quản lý dữ liệu và phân quyền
-  - tích hợp AI vào ứng dụng quản trị
-
-### Giá trị cho CV / tuyển dụng
-
-- Thể hiện năng lực full-stack theo hướng sản phẩm
-- Có minh chứng về dashboard, CRUD, auth, security, AI integration và service-layer design
-- Cho thấy khả năng nghĩ theo hệ thống thay vì chỉ làm UI đơn lẻ
-- Phù hợp để trình bày ở các vị trí:
-  - backend PHP developer
-  - full-stack web developer
-  - software engineer làm sản phẩm nội bộ / dashboard / admin tools
-
-## 9. Cài đặt và chạy local
-
-### Yêu cầu
+### Requirements
 
 - PHP 8.x
-- MySQL hoặc MariaDB
-- Apache (XAMPP hoặc Laragon)
+- MySQL or MariaDB
+- Apache with `mod_rewrite`
+- XAMPP, Laragon, or a similar local PHP stack
+- optional: an AI bridge service if you want to enable Meow chatbot / Copilot runtime
 
-### Các bước cơ bản
-
-1. Clone hoặc copy source vào web root.
+### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
-cd ZenoxDigital
+git clone https://github.com/EmBeHocCode/ZenoDigital.git
+cd ZenoDigital
 ```
 
-2. Tạo database và import schema.
+### 2. Create the environment file
 
-- Import file `database/schema.sql`
+Copy `.env.example` to `.env` and adjust the important values:
 
-3. Tạo file môi trường.
+- `APP_URL`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASS`
+- `UPLOAD_PATH`
 
-- Copy `.env.example` thành `.env`
-- Cập nhật tối thiểu:
-  - `APP_URL`
-  - `DB_HOST`
-  - `DB_PORT`
-  - `DB_NAME`
-  - `DB_USER`
-  - `DB_PASS`
-  - `UPLOAD_PATH`
+Do not commit real secrets or provider keys to a public repository.
 
-4. Nếu dùng AI bridge, cấu hình thêm:
+### 3. Import the database
 
-- `AI_ENABLED=true`
-- `AI_PROVIDER=bridge`
-- `AI_BRIDGE_URL=...`
-- `AI_BRIDGE_KEY=...`
-- `AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true|false`
+For a clean baseline:
 
-Nếu chưa dùng AI bridge thật, có thể:
+- import [schema.sql](C:\xampp\htdocs\ZenoxDigital\database\schema.sql)
 
-- đặt `AI_ENABLED=false` để tắt AI
-- hoặc giữ `AI_ENABLED=true` và dùng `AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true` trong môi trường phát triển
+Optional:
 
-5. Nếu dùng Google OAuth, cấu hình:
+- import [demo_dashboard_seed.sql](C:\xampp\htdocs\ZenoxDigital\database\demo_dashboard_seed.sql) if you want richer dashboard and reporting data for presentation/demo purposes
 
-- `GOOGLE_OAUTH_ENABLED=true`
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `GOOGLE_REDIRECT_URI`
+### 4. Configure AI bridge only if needed
 
-6. Bật Apache `mod_rewrite` và chạy project tại:
+Basic AI-related environment values:
+
+```env
+AI_ENABLED=true
+AI_PROVIDER=bridge
+AI_BRIDGE_URL=http://your-ai-bridge/api/web-chat
+AI_BRIDGE_KEY=your-secret-key
+AI_CHAT_TIMEOUT=20
+AI_BRIDGE_RETRIES=1
+AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
+```
+
+If you do not want to run AI locally yet, you can disable it:
+
+```env
+AI_ENABLED=false
+```
+
+### 5. Run the project locally
+
+Point Apache to the `public` entry point, then open:
 
 ```text
 http://localhost/ZenoxDigital/public
 ```
 
-### Tài khoản demo
+## Demo Flow / How to Use
 
-Nếu dùng seed/schema local mặc định hiện tại:
+### Storefront Demo Flow
 
-- `admin@local.test / 123456`
-- `user@local.test / 123456`
+1. Open the homepage and review the cloud-first positioning.
+2. Browse the product catalog and filter Cloud VPS / Cloud Server plans.
+3. Open a product detail page and inspect specs plus related plans.
+4. Register or sign in to access profile, wallet, and security features.
+5. Use the AI widget for product guidance or feedback submission.
+6. Try checkout with wallet balance if your demo data is prepared for it.
 
-## 10. Hướng dẫn sử dụng nhanh
+### Admin Demo Flow
 
-### Storefront
+1. Sign in with an account that has backoffice access.
+2. Open `/admin` to view KPI cards and dashboard charts.
+3. Visit products, orders, users, coupons, feedback, payments, and SQL Manager.
+4. Open Meow Copilot and ask operational questions such as:
+   - pending orders summary
+   - coupon status
+   - top-selling products
+   - quick cloud product recommendation
+5. For AI-assisted mutations, observe the preview/confirm flow instead of direct free-form writes.
 
-1. Vào trang chủ để xem nhóm dịch vụ chính
-2. Mở danh sách sản phẩm để lọc theo nhu cầu
-3. Xem chi tiết gói dịch vụ
-4. Đăng ký hoặc đăng nhập để thao tác với tài khoản
-5. Dùng chatbot nếu cần hỏi nhanh hoặc gửi feedback
+## Screenshots
 
-### Admin Dashboard
+The repository already includes lightweight placeholder preview images in [docs/screenshots](C:\xampp\htdocs\ZenoxDigital\docs\screenshots). These are useful for GitHub layout now and can be replaced with real captures later.
 
-1. Đăng nhập bằng tài khoản admin
-2. Truy cập dashboard tại `/admin`
-3. Kiểm tra các module như sản phẩm, đơn hàng, coupon, người dùng, feedback
-4. Mở `Meow Copilot` để:
-   - hỏi dữ liệu vận hành
-   - xem recommendation
-   - preview và xác nhận một số thao tác quản trị
+### Current screenshot assets
 
-## 11. Hình ảnh minh họa
+- ![Homepage Preview](docs/screenshots/homepage-preview.svg)
+- ![Admin Dashboard Preview](docs/screenshots/admin-dashboard-preview.svg)
+- ![AI Copilot Preview](docs/screenshots/ai-copilot-preview.svg)
+- ![SQL Manager Preview](docs/screenshots/sql-manager-preview.svg)
 
-Thư mục `docs/screenshots/` đã được tạo sẵn để phục vụ showcase trên GitHub và báo cáo học thuật.
+### Recommended real screenshots to add later
 
-Hiện tại README đang dùng các ảnh preview placeholder sau:
-
-- `docs/screenshots/homepage-preview.svg`
-- `docs/screenshots/admin-dashboard-preview.svg`
-- `docs/screenshots/ai-copilot-preview.svg`
-- `docs/screenshots/sql-manager-preview.svg`
-
-Khi hoàn thiện hồ sơ project, nên thay hoặc bổ sung screenshot thật cho các khu vực:
-
-- Homepage / storefront
-- Trang danh sách sản phẩm
-- Trang chi tiết sản phẩm
-- Admin dashboard overview
-- Product management
+- homepage / hero with featured cloud products
+- product catalog with filters
+- product detail page
+- admin dashboard overview
 - Meow Copilot panel
-- SQL Manager
+- SQL Manager import/report screen
 
-## 12. Roadmap
+## What I Learned / Technical Highlights
 
-- Hoàn thiện sâu hơn payment management và flow giao dịch
-- Mở rộng AI mutation cho nhiều tác vụ quản trị hơn nhưng vẫn giữ guardrail
-- Bổ sung analytics và reporting sâu hơn cho dashboard
-- Tăng chất lượng recommendation cho nhóm Cloud/VPS
-- Mở rộng health monitoring và observability cho các module dữ liệu
-- Chuẩn hóa testing, static analysis và CI workflow nếu public repo
+This project is valuable as a learning and portfolio artifact because it demonstrates more than UI assembly.
 
-## 13. Đóng góp
+### Engineering highlights
 
-Hiện tại dự án phù hợp nhất cho mục đích:
+- designing a modular PHP MVC codebase without relying on a full framework
+- organizing business logic into Controllers, Models, and Services
+- implementing role-aware backoffice permissions for admin and staff scopes
+- building profile security flows with session tracking and 2FA
+- modeling business entities for a digital services commerce workflow
+- adding AI as a constrained support layer rather than a disconnected chatbot demo
+- using schema health and SQL guardrails to reduce administrative risk
 
-- học tập
-- nghiên cứu đồ án
-- portfolio cá nhân
+### Academic value
 
-Nếu bạn muốn dùng hoặc mở rộng dự án:
+- maps well to software engineering topics such as requirements analysis, system design, data modeling, and access control
+- demonstrates how a commerce-oriented information system can be structured end to end
+- provides a concrete example of integrating AI into an operational system with permissions and guardrails
 
-- tạo issue để trao đổi hướng phát triển
-- fork repo cho mục đích học tập
-- bổ sung test hoặc refactor theo từng module thay vì sửa dồn một lần
+### Portfolio / CV value
 
-## 14. Giấy phép
+- shows end-to-end product thinking across storefront, admin dashboard, security, data, and AI
+- demonstrates backoffice tooling, not only customer-facing pages
+- highlights practical engineering tradeoffs: current state vs roadmap, guarded AI, and incomplete data domains
+- fits well for backend PHP, full-stack web, internal tools, or product engineering roles
 
-Dự án hiện được phát hành theo giấy phép `MIT`. Xem chi tiết tại file `LICENSE`.
+## Current Limitations
 
----
+The following limitations are explicitly true in the current state of the repository:
 
-ZenoxDigital không chỉ là một giao diện bán hàng, mà là một bài tập xây dựng hệ thống tương đối hoàn chỉnh: có storefront, có backoffice, có quản trị dữ liệu, có bảo mật nền, và có AI Copilot được ràng buộc bởi dữ liệu thật, quyền hạn và guardrail vận hành.
+- the project is local-first and demo-oriented; it is not presented as fully production-hardened
+- there is no automated test suite or CI pipeline in the repository yet
+- AI profit/capacity analysis is intentionally incomplete because the current schema does not yet include cost and capacity fields
+- AI runtime depends on an external bridge service when enabled
+- some operational modules are safer than others; a number of AI-admin actions remain preview-only or read-only by design
+- environment setup currently assumes a traditional PHP hosting or XAMPP-style local environment rather than containerized deployment
+
+## Roadmap
+
+The roadmap below reflects the actual unfinished areas rather than marketing promises.
+
+### Product and Backoffice
+
+- continue polishing payment and wallet operational flows
+- improve dashboard reporting depth and operational summaries
+- refine storefront content and cloud-first merchandising strategy
+
+### AI Roadmap
+
+- Phase 6: slow-moving product and capacity analysis
+- Phase 7: profit guardrails with cost-aware recommendation boundaries
+- Phase 8: executive reporting and action-plan style outputs for admin
+
+### Engineering Roadmap
+
+- add automated tests for critical modules
+- add static checks and CI for public-repo readiness
+- improve deployment documentation for public contributors
+- replace placeholder screenshots with real system captures
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](C:\xampp\htdocs\ZenoxDigital\LICENSE).

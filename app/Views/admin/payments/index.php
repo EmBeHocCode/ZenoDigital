@@ -22,6 +22,12 @@ $directionLabels = [
     'credit' => ['Tiền vào', 'text-success'],
     'debit' => ['Tiền ra', 'text-danger'],
 ];
+
+$paymentMethodLabels = [
+    'bank_transfer' => 'QR ngân hàng (SePay)',
+    'wallet' => 'Ví nội bộ',
+    'manual' => 'Thủ công',
+];
 ?>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -188,7 +194,8 @@ $directionLabels = [
                                     <div class="small <?= e((string) $directionMeta[1]) ?>"><?= e((string) $directionMeta[0]) ?></div>
                                 </td>
                                 <td>
-                                    <div class="fw-semibold"><?= e((string) ucfirst((string) ($transaction['payment_method'] ?? 'manual'))) ?></div>
+                                    <?php $paymentMethod = (string) ($transaction['payment_method'] ?? 'manual'); ?>
+                                    <div class="fw-semibold"><?= e((string) ($paymentMethodLabels[$paymentMethod] ?? ucwords(str_replace('_', ' ', $paymentMethod)))) ?></div>
                                     <div class="small text-secondary">Số dư: <?= format_money((float) ($transaction['balance_after'] ?? 0)) ?></div>
                                 </td>
                                 <td><?= format_money((float) ($transaction['amount'] ?? 0)) ?></td>

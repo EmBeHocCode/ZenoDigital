@@ -99,8 +99,47 @@ class ProductController extends Controller
                 : 'Dịch vụ ' . (string) ($selectedCategory['name'] ?? 'Sản phẩm số');
         }
 
+        $catalogCanonicalUrl = $selectedCategoryId > 0
+            ? base_url('products?' . http_build_query(['category_id' => $selectedCategoryId]))
+            : base_url('products');
+
+        $siteName = app_site_name();
+        $catalogMetaDescription = $isCloudCatalog
+            ? 'Danh mục Cloud VPS và Cloud Server của ' . $siteName . ' cho website, app, automation và workload production với cấu hình rõ ràng, giá minh bạch.'
+            : 'Danh mục dịch vụ số của ' . $siteName . ' với thông tin gói dịch vụ, cấu hình và hướng sử dụng rõ ràng.';
+
+        if ($selectedCategory) {
+            $catalogMetaDescription = seo_trim_text(
+                (string) ($selectedCategory['description'] ?? $catalogMetaDescription),
+                170
+            );
+        }
+
+        $hasIndexBlockingFilters = $filters['q'] !== ''
+            || $filters['min_price'] !== ''
+            || $filters['max_price'] !== ''
+            || $filters['cpu'] !== ''
+            || $filters['ram'] !== ''
+            || $filters['disk'] !== ''
+            || $filters['location'] !== ''
+            || $filters['plan_type'] !== ''
+            || $filters['sort'] !== 'latest';
+
+        $catalogStructuredData = [
+            '@context' => 'https://schema.org',
+            '@type' => 'CollectionPage',
+            'name' => $pageTitle,
+            'url' => $catalogCanonicalUrl,
+            'description' => $catalogMetaDescription,
+        ];
+
         $this->view('products/index', [
             'title' => $pageTitle,
+            'metaDescription' => $catalogMetaDescription,
+            'canonicalUrl' => $catalogCanonicalUrl,
+            'robotsDirective' => $hasIndexBlockingFilters ? 'noindex,follow' : 'index,follow',
+            'ogType' => 'website',
+            'structuredData' => $catalogStructuredData,
             'vpsUi' => true,
             'products' => $result['data'],
             'meta' => $result['meta'],
@@ -152,9 +191,40 @@ class ProductController extends Controller
             'description' => $product['category_description'] ?? '',
         ]);
         $pageTitle = $product['name'] . ($isCloudProduct ? ' - Cấu hình VPS' : ' - Chi tiết sản phẩm');
+        $canonicalUrl = base_url('products/show/' . $id);
+        $metaDescription = seo_trim_text(
+            (string) ($product['short_description'] ?? $product['description'] ?? ''),
+            170
+        );
+        $availability = match (strtolower((string) ($product['stock_status'] ?? 'in_stock'))) {
+            'in_stock', 'available' => 'https://schema.org/InStock',
+            'out_of_stock', 'sold_out' => 'https://schema.org/OutOfStock',
+            default => 'https://schema.org/LimitedAvailability',
+        };
+        $structuredData = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Product',
+            'name' => (string) ($product['name'] ?? ''),
+            'description' => $metaDescription,
+            'image' => product_image_url($product),
+            'category' => (string) ($product['category_name'] ?? ''),
+            'sku' => 'product-' . (int) ($product['id'] ?? 0),
+            'offers' => [
+                '@type' => 'Offer',
+                'url' => $canonicalUrl,
+                'priceCurrency' => 'VND',
+                'price' => (float) ($product['price'] ?? 0),
+                'availability' => $availability,
+            ],
+        ];
 
         $this->view('products/show', [
             'title' => $pageTitle,
+            'metaDescription' => $metaDescription,
+            'canonicalUrl' => $canonicalUrl,
+            'ogType' => 'product',
+            'metaImageUrl' => product_image_url($product),
+            'structuredData' => $structuredData,
             'vpsUi' => true,
             'product' => $product,
             'images' => $productModel->images($id),

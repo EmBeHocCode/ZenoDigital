@@ -133,6 +133,8 @@ $pointsToNext = (int) ($rankSummary['points_to_next'] ?? 0);
 $rankCoupons = is_array($rankSummary['coupons'] ?? null) ? $rankSummary['coupons'] : [];
 $walletSummary = is_array($walletSummary ?? null) ? $walletSummary : [];
 $walletTransactions = is_array($walletTransactions ?? null) ? $walletTransactions : [];
+$pendingWalletTopup = is_array($pendingWalletTopup ?? null) ? $pendingWalletTopup : [];
+$sepayConfig = is_array($sepayConfig ?? null) ? $sepayConfig : sepay_config();
 $roleName = strtolower(trim((string) ($user['role_name'] ?? 'user')));
 $roleLabel = role_display_name($roleName);
 $profileFullName = (string) old('full_name', (string) ($user['full_name'] ?? ''));
@@ -161,7 +163,7 @@ $latestWalletActivityAt = !empty($walletSummary['latest_activity_at'])
     ? date('d/m/Y H:i', strtotime((string) $walletSummary['latest_activity_at']))
     : ($latestActivity ?? $latestDepositAt);
 $walletPaymentMethodLabels = [
-    'bank_transfer' => 'Chuyển khoản',
+    'bank_transfer' => 'QR ngân hàng',
     'momo' => 'MoMo',
     'zalopay' => 'ZaloPay',
     'card' => 'Thẻ cào',
@@ -186,6 +188,30 @@ $walletDirectionLabels = [
 $walletAmountOld = old('wallet_amount', '100000');
 $walletMethodOld = old('wallet_payment_method', 'bank_transfer');
 $walletNoteOld = old('wallet_note', '');
+$walletDepositMethods = [
+    'bank_transfer' => 'QR ngân hàng (SePay)',
+];
+$walletSePayReady = is_sepay_configured();
+$walletPendingCode = (string) ($pendingWalletTopup['transaction_code'] ?? '');
+$walletPendingAmount = (float) ($pendingWalletTopup['amount'] ?? 0);
+$walletTopupAutoOpen = !empty($walletTopupAutoOpen);
+$walletPendingCreatedAt = !empty($pendingWalletTopup['created_at'])
+    ? date('d/m/Y H:i', strtotime((string) $pendingWalletTopup['created_at']))
+    : null;
+$walletPendingQrUrl = ($walletSePayReady && $walletPendingCode !== '' && $walletPendingAmount > 0)
+    ? sepay_qr_image_url($walletPendingAmount, $walletPendingCode)
+    : '';
+$walletBankLabel = trim((string) ($sepayConfig['bank_name'] ?? ''));
+$walletBankCode = trim((string) ($sepayConfig['bank_code'] ?? ''));
+$walletBankDisplay = $walletBankLabel !== ''
+    ? $walletBankLabel
+    : ($walletBankCode !== '' ? $walletBankCode : 'Ngân hàng chuyển khoản');
+$walletBankAccount = trim((string) ($sepayConfig['account_number'] ?? ''));
+$walletBankOwner = trim((string) ($sepayConfig['account_name'] ?? ''));
+$walletRefreshUrl = base_url('profile?tab=wallet-log');
+$walletPendingStatusUrl = $walletPendingCode !== ''
+    ? base_url('profile/wallet/status/' . rawurlencode($walletPendingCode))
+    : '';
 ?>
 
 <section class="ua-account-hero py-4 py-lg-5">
@@ -729,9 +755,9 @@ $walletNoteOld = old('wallet_note', '');
                     <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                         <div>
                             <h3 class="h5 fw-bold mb-1">Nạp số dư tài khoản</h3>
-                            <p class="text-secondary mb-0">Chọn mệnh giá hoặc nhập số tiền muốn nạp. Sau khi gửi form, hệ thống sẽ cộng ngay vào ví và ghi lại lịch sử giao dịch.</p>
+                            <p class="text-secondary mb-0">Nhập số tiền cần nạp, hệ thống sẽ tạo QR SePay với số tiền và mã chuyển khoản ngắn tự động kiểu <code>zno1234</code>. Ví chỉ được cộng sau khi tiền vào đúng mã này.</p>
                         </div>
-                        <span class="ua-chip"><i class="fas fa-bolt me-1"></i>Cộng số dư tức thì</span>
+                        <span class="ua-chip"><i class="fas fa-qrcode me-1"></i>QR SePay tự đối soát</span>
                     </div>
 
                     <form method="post" action="<?= base_url('profile/wallet/deposit') ?>">
@@ -774,7 +800,7 @@ $walletNoteOld = old('wallet_note', '');
                         <div class="mb-3">
                             <label class="form-label">Phương thức nạp</label>
                             <div class="ua-wallet-method-grid">
-                                <?php foreach ($walletPaymentMethodLabels as $methodKey => $methodLabel): ?>
+                                <?php foreach ($walletDepositMethods as $methodKey => $methodLabel): ?>
                                     <label class="ua-wallet-method <?= $walletMethodOld === $methodKey ? 'is-active' : '' ?>">
                                         <input
                                             class="ua-wallet-method-input"
@@ -794,15 +820,16 @@ $walletNoteOld = old('wallet_note', '');
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Ghi chú giao dịch</label>
+                            <label class="form-label">Ghi chú riêng (tùy chọn)</label>
                             <input
                                 type="text"
                                 class="form-control"
                                 name="note"
                                 maxlength="160"
                                 value="<?= e($walletNoteOld) ?>"
-                                placeholder="Ví dụ: Nạp để thanh toán đơn VPS tháng này"
+                                placeholder="Ví dụ: Nạp để thanh toán VPS tháng này"
                             >
+                            <div class="form-text">Ô này chỉ để bạn tự ghi nhớ. Nội dung chuyển khoản để SePay đối soát sẽ được hệ thống tự tạo sẵn trong mã QR.</div>
                         </div>
 
                         <div class="ua-wallet-submit">
@@ -810,11 +837,29 @@ $walletNoteOld = old('wallet_note', '');
                                 <div><strong>Số dư hiện tại:</strong> <?= format_money($currentBalance) ?></div>
                                 <div><strong>Lần nạp gần nhất:</strong> <?= e($latestDepositAt) ?></div>
                             </div>
-                            <button class="btn btn-primary" type="submit">
-                                <i class="fas fa-wallet me-1"></i>Xác nhận nạp tiền
+                            <button class="btn btn-primary" type="submit" <?= !$walletSePayReady ? 'disabled' : '' ?>>
+                                <i class="fas fa-wallet me-1"></i>Tạo mã QR nạp tiền
                             </button>
                         </div>
                     </form>
+
+                    <?php if ($walletSePayReady && $walletPendingCode !== '' && $walletPendingAmount > 0): ?>
+                        <div class="ua-info-box ua-wallet-pending-box mt-4">
+                            <i class="fas fa-hourglass-half mt-1"></i>
+                            <div class="flex-grow-1">
+                                <strong>Bạn đang có một mã QR nạp ví chờ xác nhận.</strong>
+                                <div class="small text-secondary mt-1">Mã <code><?= e($walletPendingCode) ?></code> đã có sẵn số tiền và nội dung chuyển khoản. Mở popup để theo dõi trạng thái thanh toán theo thời gian thực.</div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" data-wallet-topup-open>
+                                <i class="fas fa-qrcode me-1"></i>Mở popup QR
+                            </button>
+                        </div>
+                    <?php elseif (!$walletSePayReady): ?>
+                        <div class="ua-info-box mt-4">
+                            <i class="fas fa-triangle-exclamation mt-1"></i>
+                            <span>Kênh nạp ví SePay chưa được cấu hình đầy đủ. Bạn vui lòng quay lại sau hoặc liên hệ quản trị viên để bật QR ngân hàng.</span>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <aside class="ua-wallet-side">
@@ -841,7 +886,7 @@ $walletNoteOld = old('wallet_note', '');
                         </div>
                         <div class="ua-info-box mt-3">
                             <i class="fas fa-circle-info mt-1"></i>
-                            <span>Ví nội bộ hiện hỗ trợ nạp số dư tức thì và được dùng trực tiếp để thanh toán đơn hàng trong hệ thống.</span>
+                            <span>Ví nội bộ dùng để thanh toán đơn hàng trong hệ thống. Nạp tiền hiện được xác nhận tự động qua QR ngân hàng SePay với mã ngắn kiểu <code>zno1234</code> thay vì cộng tức thì ngay khi gửi form.</span>
                         </div>
                     </div>
                 </aside>
@@ -936,6 +981,99 @@ $walletNoteOld = old('wallet_note', '');
         <?php endforeach; ?>
     </div>
 </section>
+
+<?php if ($walletSePayReady && $walletPendingCode !== '' && $walletPendingAmount > 0): ?>
+    <div
+        class="modal fade"
+        id="walletTopupModal"
+        tabindex="-1"
+        aria-hidden="true"
+        data-wallet-topup-modal
+        data-status-url="<?= e($walletPendingStatusUrl) ?>"
+        data-refresh-url="<?= e($walletRefreshUrl) ?>"
+        data-auto-open="<?= $walletTopupAutoOpen ? '1' : '0' ?>"
+    >
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content ua-wallet-modal">
+                <div class="modal-header">
+                    <div>
+                        <span class="ua-kicker">QR Bank / SePay</span>
+                        <h5 class="modal-title mb-0">Nạp số dư tài khoản</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div data-wallet-topup-state="pending">
+                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                            <div>
+                                <h4 class="h6 fw-bold mb-1">Đang chờ thanh toán</h4>
+                                <p class="text-secondary mb-0">Quét mã QR bên dưới là ứng dụng ngân hàng sẽ có sẵn số tiền và nội dung chuyển khoản. Hệ thống sẽ tự kiểm tra webhook để cộng ví khi giao dịch thành công.</p>
+                            </div>
+                            <span class="ua-chip is-warning">Đang chờ thanh toán</span>
+                        </div>
+                        <div class="row g-4 align-items-center">
+                            <div class="col-md-5">
+                                <div class="ua-wallet-qr-stage">
+                                    <div class="ua-wallet-qr-loader">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                        <span>Đang chờ quét và xác nhận</span>
+                                    </div>
+                                    <div class="ua-wallet-qr-scan-line" aria-hidden="true"></div>
+                                    <img
+                                        src="<?= e($walletPendingQrUrl) ?>"
+                                        alt="QR SePay nạp ví"
+                                        class="img-fluid rounded-4 border bg-white p-2"
+                                    >
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="row g-2 small">
+                                    <div class="col-sm-6"><strong>Số tiền:</strong><br><?= format_money($walletPendingAmount) ?></div>
+                                    <div class="col-sm-6"><strong>Tạo lúc:</strong><br><?= e((string) $walletPendingCreatedAt) ?></div>
+                                    <div class="col-sm-6"><strong>Ngân hàng:</strong><br><?= e($walletBankDisplay) ?></div>
+                                    <div class="col-sm-6"><strong>Số tài khoản:</strong><br><code><?= e($walletBankAccount) ?></code></div>
+                                    <div class="col-sm-12"><strong>Chủ tài khoản:</strong><br><?= e($walletBankOwner) ?></div>
+                                    <div class="col-sm-12"><strong>Mã chuyển khoản tự động:</strong><br><code><?= e($walletPendingCode) ?></code></div>
+                                </div>
+                                <div class="ua-info-box mt-3">
+                                    <i class="fas fa-circle-info mt-1"></i>
+                                    <span>Mã QR đã gắn sẵn đúng số tiền và nội dung <code><?= e($walletPendingCode) ?></code>. Nếu ngân hàng báo chuyển thành công, popup này sẽ tự đổi sang trạng thái hoàn tất.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-none" data-wallet-topup-state="success">
+                        <div class="ua-wallet-success-state text-center">
+                            <div class="ua-wallet-success-icon">
+                                <i class="fas fa-circle-check"></i>
+                            </div>
+                            <h4 class="fw-bold mb-2">Nạp tiền thành công</h4>
+                            <p class="text-secondary mb-2">Số tiền <strong data-wallet-success-amount><?= format_money($walletPendingAmount) ?></strong> đã được cộng vào ví của bạn.</p>
+                            <p class="small text-secondary mb-0">Số dư hiện tại: <strong data-wallet-success-balance><?= format_money($currentBalance) ?></strong>. Hệ thống đang làm mới lịch sử giao dịch...</p>
+                        </div>
+                    </div>
+
+                    <div class="d-none" data-wallet-topup-state="failed">
+                        <div class="ua-wallet-success-state text-center">
+                            <div class="ua-wallet-failed-icon">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                            <h4 class="fw-bold mb-2">Chưa xác nhận được thanh toán</h4>
+                            <p class="text-secondary mb-0">Hệ thống chưa thể chốt giao dịch này. Bạn có thể kiểm tra lại sau ít phút hoặc liên hệ quản trị viên nếu đã trừ tiền nhưng popup vẫn chưa hoàn tất.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <a href="<?= e($walletRefreshUrl) ?>" class="btn btn-outline-primary" data-wallet-status-refresh>
+                        <i class="fas fa-rotate-right me-1"></i>Làm mới trang
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 <div class="modal fade" id="avatarCropModal" tabindex="-1" aria-hidden="true" data-avatar-crop-modal>
     <div class="modal-dialog modal-dialog-centered ua-crop-dialog">

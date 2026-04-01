@@ -1,5 +1,5 @@
 <?php
-$siteName = (string) app_setting('site_name', config('app.name', 'Digital Market Pro'));
+$siteName = app_site_name();
 $footerText = (string) app_setting('footer_text', 'Nền tảng bán dịch vụ/sản phẩm số chuyên nghiệp: VPS, cloud, game server, wallet, thẻ nạp và nhiều hơn nữa.');
 $contactEmail = (string) app_setting('contact_email', 'support@digitalmarket.local');
 $contactPhone = (string) app_setting('contact_phone', '0900 000 999');

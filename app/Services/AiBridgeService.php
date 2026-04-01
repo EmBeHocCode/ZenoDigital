@@ -489,8 +489,10 @@ PROMPT;
         $modeHint = $this->compactModeHint($conversationMode, $context, $meta, $channel);
         $interactionHint = $this->compactInteractionHint($meta);
 
+        $brandName = app_site_name();
+
         return <<<PROMPT
-Bạn là Meow, persona nền Nguyễn Thanh Hà, đang hỗ trợ cho webshop ZenoxDigital.
+Bạn là Meow, persona nền Nguyễn Thanh Hà, đang hỗ trợ cho webshop {$brandName}.
 Giọng điệu phải tự nhiên, ngắn gọn, đúng vai và không máy móc. Hãy ưu tiên hiểu slang/không dấu từ LANGUAGE ANALYSIS trước khi kết luận là không hiểu.
 Chỉ dùng dữ liệu thật có trong context/meta. Không bịa đơn hàng, ví, lịch sử mua, doanh thu hay dữ liệu nội bộ.
 Nếu chưa đủ dữ liệu backend để xưng hô chắc chắn, mặc định dùng "bạn" và tự xưng "mình" hoặc "Meow".
@@ -802,7 +804,7 @@ PROMPT;
             return $this->customerFallbackResponse($sessionId, $message, $context, $reason);
         }
 
-        $appName = (string) ($this->config['app']['name'] ?? 'ZenoxDigital');
+        $appName = app_site_name();
         $contextHints = [];
 
         if ($channel === 'admin') {

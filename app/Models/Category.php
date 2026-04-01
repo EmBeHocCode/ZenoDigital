@@ -157,6 +157,12 @@ class Category extends Model
         return $stmt->fetchAll() ?: [];
     }
 
+    public function sitemapEntries(): array
+    {
+        $stmt = $this->db->query('SELECT id, name, slug, created_at, updated_at FROM categories WHERE deleted_at IS NULL ORDER BY updated_at DESC, created_at DESC');
+        return $stmt->fetchAll() ?: [];
+    }
+
     public function isCloudStorefrontCategory(array $category): bool
     {
         $haystack = mb_strtolower(trim(implode(' ', [

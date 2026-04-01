@@ -25,6 +25,9 @@ tmp_*
 *.tmp
 *.cache
 
+# Local database exports
+database/exports/
+
 # Runtime state
 storage/sessions/*
 !storage/sessions/.gitkeep

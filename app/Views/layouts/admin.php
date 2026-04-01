@@ -1,6 +1,6 @@
 <?php use App\Core\Auth; ?>
 <?php
-$siteName = (string) app_setting('site_name', config('app.name', 'Digital Market Pro'));
+$siteName = app_site_name();
 $siteFavicon = trim((string) app_setting('site_favicon', ''));
 $siteFaviconUrl = $siteFavicon !== '' ? base_url('uploads/' . ltrim($siteFavicon, '/')) : base_url('images/logo/zenox.png');
 $pageStyles = is_array($pageStyles ?? null) ? $pageStyles : [];
@@ -8,8 +8,12 @@ $pageScripts = is_array($pageScripts ?? null) ? $pageScripts : [];
 $canUseAdminAi = Auth::can('backoffice.ai');
 $adminAiCssPath = BASE_PATH . '/public/assets/css/admin-ai-panel.css';
 $adminAiJsPath = BASE_PATH . '/public/assets/js/admin-ai-panel.js';
+$appJsPath = BASE_PATH . '/public/assets/js/app.js';
+$adminDashboardJsPath = BASE_PATH . '/public/assets/js/admin-dashboard.js';
 $adminAiCssUrl = base_url('assets/css/admin-ai-panel.css') . (is_file($adminAiCssPath) ? '?v=' . filemtime($adminAiCssPath) : '');
 $adminAiJsUrl = base_url('assets/js/admin-ai-panel.js') . (is_file($adminAiJsPath) ? '?v=' . filemtime($adminAiJsPath) : '');
+$appJsUrl = base_url('assets/js/app.js') . (is_file($appJsPath) ? '?v=' . filemtime($appJsPath) : '');
+$adminDashboardJsUrl = base_url('assets/js/admin-dashboard.js') . (is_file($adminDashboardJsPath) ? '?v=' . filemtime($adminDashboardJsPath) : '');
 ?>
 <!doctype html>
 <html lang="vi">
@@ -60,8 +64,8 @@ $adminAiJsUrl = base_url('assets/js/admin-ai-panel.js') . (is_file($adminAiJsPat
 <?php endif; ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="<?= base_url('assets/js/app.js') ?>"></script>
-<script src="<?= base_url('assets/js/admin-dashboard.js') ?>"></script>
+<script src="<?= e($appJsUrl) ?>"></script>
+<script src="<?= e($adminDashboardJsUrl) ?>"></script>
 <?php if ($canUseAdminAi): ?>
     <script src="<?= e($adminAiJsUrl) ?>"></script>
 <?php endif; ?>

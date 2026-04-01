@@ -680,7 +680,167 @@
         syncWalletMethodState();
     }
 
+    const initWalletTopupModal = () => {
+        const modalElement = document.querySelector('[data-wallet-topup-modal]');
+        if (!modalElement || !window.bootstrap) {
+            return;
+        }
+
+        const openButtons = document.querySelectorAll('[data-wallet-topup-open]');
+        const refreshButton = modalElement.querySelector('[data-wallet-status-refresh]');
+        const pendingState = modalElement.querySelector('[data-wallet-topup-state="pending"]');
+        const successState = modalElement.querySelector('[data-wallet-topup-state="success"]');
+        const failedState = modalElement.querySelector('[data-wallet-topup-state="failed"]');
+        const successAmount = modalElement.querySelector('[data-wallet-success-amount]');
+        const successBalance = modalElement.querySelector('[data-wallet-success-balance]');
+        const statusUrl = modalElement.dataset.statusUrl || '';
+        const refreshUrl = modalElement.dataset.refreshUrl || window.location.href;
+        const autoOpen = modalElement.dataset.autoOpen === '1';
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+        let pollTimer = null;
+        let successLocked = false;
+
+        const stopPolling = () => {
+            if (pollTimer) {
+                window.clearTimeout(pollTimer);
+                pollTimer = null;
+            }
+        };
+
+        const setState = (state) => {
+            modalElement.dataset.walletTopupState = state;
+
+            if (pendingState) {
+                pendingState.classList.toggle('d-none', state !== 'pending');
+            }
+
+            if (successState) {
+                successState.classList.toggle('d-none', state !== 'success');
+            }
+
+            if (failedState) {
+                failedState.classList.toggle('d-none', state !== 'failed');
+            }
+
+            if (refreshButton) {
+                const isSuccess = state === 'success';
+                refreshButton.classList.toggle('btn-outline-primary', !isSuccess);
+                refreshButton.classList.toggle('btn-primary', isSuccess);
+                refreshButton.innerHTML = isSuccess
+                    ? '<i class="fas fa-check me-1"></i>Xem số dư mới'
+                    : '<i class="fas fa-rotate-right me-1"></i>Làm mới trang';
+            }
+        };
+
+        const schedulePoll = (delay = 2500) => {
+            stopPolling();
+            pollTimer = window.setTimeout(checkStatus, delay);
+        };
+
+        const goToWalletHistory = (delay = 1600) => {
+            window.setTimeout(() => {
+                window.location.href = refreshUrl;
+            }, delay);
+        };
+
+        const handleStatusPayload = (payload) => {
+            const transaction = payload && payload.transaction ? payload.transaction : null;
+            const wallet = payload && payload.wallet ? payload.wallet : null;
+            const status = transaction && transaction.status ? transaction.status : 'pending';
+
+            if (status === 'completed') {
+                successLocked = true;
+                if (successAmount && transaction.amount_formatted) {
+                    successAmount.textContent = transaction.amount_formatted;
+                }
+                if (successBalance && wallet && wallet.current_balance_formatted) {
+                    successBalance.textContent = wallet.current_balance_formatted;
+                }
+                setState('success');
+                stopPolling();
+                goToWalletHistory();
+                return;
+            }
+
+            if (status === 'failed') {
+                setState('failed');
+                stopPolling();
+                return;
+            }
+
+            setState('pending');
+            if (modalElement.classList.contains('show') && !successLocked) {
+                schedulePoll();
+            }
+        };
+
+        async function checkStatus() {
+            if (!statusUrl || successLocked) {
+                return;
+            }
+
+            stopPolling();
+
+            try {
+                const response = await window.fetch(statusUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                });
+
+                if (!response.ok) {
+                    throw new Error('status_fetch_failed');
+                }
+
+                const payload = await response.json();
+                if (!payload || payload.success !== true) {
+                    throw new Error('status_payload_failed');
+                }
+
+                handleStatusPayload(payload);
+            } catch (_) {
+                if (modalElement.classList.contains('show') && !successLocked) {
+                    schedulePoll(4000);
+                }
+            }
+        }
+
+        openButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                if (successLocked) {
+                    setState('success');
+                } else {
+                    setState('pending');
+                }
+                modal.show();
+            });
+        });
+
+        modalElement.addEventListener('shown.bs.modal', () => {
+            if (!successLocked) {
+                setState('pending');
+                checkStatus();
+            }
+        });
+
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            if (!successLocked) {
+                stopPolling();
+            }
+        });
+
+        if (autoOpen) {
+            modal.show();
+        }
+    };
+
     renderOtpQr();
     initAvatarCropper();
     initBannerEditor();
+    initWalletTopupModal();
 })();

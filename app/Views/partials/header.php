@@ -7,7 +7,7 @@ use App\Services\ModuleHealthGuardService;
 $uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $activeTab = sanitize_text((string) ($_GET['tab'] ?? 'dashboard'), 30);
 $selectedCategoryId = (int) sanitize_text((string) ($_GET['category_id'] ?? ''), 10);
-$siteName = (string) app_setting('site_name', config('app.name', 'Digital Market Pro'));
+$siteName = app_site_name();
 $siteLogo = trim((string) app_setting('site_logo', ''));
 $siteLogoUrl = $siteLogo !== '' ? base_url('uploads/' . ltrim($siteLogo, '/')) : base_url('images/logo/zenox.png');
 $currentRoleLabel = role_display_name((string) (Auth::user()['role_name'] ?? 'user'));

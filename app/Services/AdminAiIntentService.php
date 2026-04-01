@@ -540,7 +540,7 @@ class AdminAiIntentService
 
         $settings = (new Setting($this->config))->all();
         $reply = 'Cài đặt hệ thống an toàn để rà nhanh:'
-            . "\n- Site name: " . (string) ($settings['site_name'] ?? 'ZenoxDigital')
+            . "\n- Site name: " . normalize_public_brand_name((string) ($settings['site_name'] ?? app_site_name()))
             . "\n- Contact email: " . (string) ($settings['contact_email'] ?? 'chưa đặt')
             . "\n- Contact phone: " . (string) ($settings['contact_phone'] ?? 'chưa đặt')
             . "\n- Maintenance mode: " . (!empty($settings['maintenance_mode']) && (string) $settings['maintenance_mode'] === '1' ? 'bật' : 'tắt');

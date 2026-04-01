@@ -3,11 +3,15 @@ $googleConfig = google_oauth_config();
 $googleClientId = (string) ($googleConfig['client_id'] ?? '');
 $googleRedirectUri = (string) ($googleConfig['redirect_uri'] ?? '');
 $hasStoredGoogleSecret = trim((string) ($googleConfig['client_secret'] ?? '')) !== '';
+$siteNameSettingValue = normalize_public_brand_name((string) ($settings['site_name'] ?? app_site_name()));
 $defaultGoogleRedirectUri = base_url('auth/google/callback');
 $siteLogo = trim((string) ($settings['site_logo'] ?? ''));
 $siteFavicon = trim((string) ($settings['site_favicon'] ?? ''));
 $siteLogoUrl = $siteLogo !== '' ? base_url('uploads/' . ltrim($siteLogo, '/')) : base_url('images/logo/zenox.png');
 $siteFaviconUrl = $siteFavicon !== '' ? base_url('uploads/' . ltrim($siteFavicon, '/')) : base_url('favicon.ico');
+$sepayConfig = sepay_config();
+$sepayWebhookToken = (string) ($sepayConfig['webhook_token'] ?? '');
+$sepayWebhookUrl = sepay_webhook_url();
 ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div>
@@ -23,7 +27,7 @@ $siteFaviconUrl = $siteFavicon !== '' ? base_url('uploads/' . ltrim($siteFavicon
         <div class="admin-card-header"><h2 class="h6 fw-bold mb-0">General</h2></div>
         <div class="admin-card-body">
             <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">Tên website</label><input class="form-control" name="site_name" value="<?= e((string) ($settings['site_name'] ?? 'Digital Market Pro')) ?>"></div>
+                <div class="col-md-6"><label class="form-label">Tên website</label><input class="form-control" name="site_name" value="<?= e($siteNameSettingValue) ?>"></div>
                 <div class="col-md-6"><label class="form-label">Email liên hệ</label><input class="form-control" name="contact_email" value="<?= e((string) ($settings['contact_email'] ?? '')) ?>"></div>
                 <div class="col-md-6"><label class="form-label">Số điện thoại</label><input class="form-control" name="contact_phone" value="<?= e((string) ($settings['contact_phone'] ?? '')) ?>"></div>
                 <div class="col-md-6"><label class="form-label">Địa chỉ</label><input class="form-control" name="address" value="<?= e((string) ($settings['address'] ?? '')) ?>"></div>
@@ -80,6 +84,21 @@ $siteFaviconUrl = $siteFavicon !== '' ? base_url('uploads/' . ltrim($siteFavicon
                 <div class="col-md-4"><label class="form-label">Ngân hàng</label><input class="form-control" name="payment_bank_name" value="<?= e((string) ($settings['payment_bank_name'] ?? '')) ?>" placeholder="VD: Vietcombank"></div>
                 <div class="col-md-4"><label class="form-label">Số tài khoản</label><input class="form-control" name="payment_bank_account" value="<?= e((string) ($settings['payment_bank_account'] ?? '')) ?>"></div>
                 <div class="col-md-4"><label class="form-label">Chủ tài khoản</label><input class="form-control" name="payment_bank_owner" value="<?= e((string) ($settings['payment_bank_owner'] ?? '')) ?>"></div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" role="switch" id="sepay_enabled" name="sepay_enabled" value="1" <?= !empty($sepayConfig['enabled']) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="sepay_enabled">Bật QR SePay cho nạp ví</label>
+                    </div>
+                </div>
+                <div class="col-md-4"><label class="form-label">Mã ngân hàng SePay</label><input class="form-control" name="sepay_bank_code" value="<?= e((string) ($sepayConfig['bank_code'] ?? '')) ?>" placeholder="VD: MBBank, Vietcombank"><div class="form-text">Dùng đúng short name ngân hàng để SePay dựng QR.</div></div>
+                <div class="col-md-4"><label class="form-label">Template QR</label><select class="form-select" name="sepay_qr_template"><?php $sepayQrTemplate = (string) ($sepayConfig['qr_template'] ?? 'compact'); ?><option value="" <?= $sepayQrTemplate === '' ? 'selected' : '' ?>>Mặc định</option><option value="compact" <?= $sepayQrTemplate === 'compact' ? 'selected' : '' ?>>Compact</option><option value="qronly" <?= $sepayQrTemplate === 'qronly' ? 'selected' : '' ?>>QR Only</option></select></div>
+                <div class="col-md-6"><label class="form-label">Webhook token</label><input class="form-control" name="sepay_webhook_token" value="<?= e($sepayWebhookToken) ?>" placeholder="Để trống để hệ thống tự tạo khi bật SePay"><div class="form-text">Có thể để chế độ Không chứng thực trên SePay và dùng token nằm ngay trong URL webhook.</div></div>
+                <div class="col-md-6"><label class="form-label">Webhook URL SePay</label><input class="form-control" value="<?= e($sepayWebhookUrl) ?>" readonly><div class="form-text">SePay cấu hình: event <code>Có tiền vào</code>, bỏ qua nếu không có code = <code>Không</code>, xác thực thanh toán = <code>Đúng</code>.</div></div>
+                <div class="col-12">
+                    <div class="alert alert-light border mb-0 small">
+                        <strong>Gợi ý cấu hình SePay:</strong> dùng URL webhook ở trên, chọn <code>application/json</code>. Hệ thống sẽ tự tạo mã nạp ví ngắn kiểu <code>zno1234</code> và nhúng sẵn vào QR cùng số tiền để SePay tự đối soát.
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -1,5 +1,5 @@
 <?php
-$siteName = (string) app_setting('site_name', config('app.name', 'Digital Market Pro'));
+$siteName = app_site_name();
 $siteFavicon = trim((string) app_setting('site_favicon', ''));
 $siteFaviconUrl = $siteFavicon !== '' ? base_url('uploads/' . ltrim($siteFavicon, '/')) : base_url('images/logo/zenox.png');
 ?>
