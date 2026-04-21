@@ -5,10 +5,10 @@ $zaloChatUrl = 'https://zalo.me/' . $supportPhone;
 $zaloCommunityUrl = '';
 $homeNoticeConfig = [
     'title' => 'Thông báo & hỗ trợ nhanh',
-    'subtitle' => 'Một vài thông tin quan trọng để bạn tìm đúng dịch vụ, nhận hỗ trợ sớm và xử lý nhanh các tình huống thường gặp.',
+    'subtitle' => 'Tổng hợp nhanh các mục hỗ trợ, cộng đồng và hướng dẫn cần thiết để bạn thao tác thuận tiện hơn ngay từ trang chủ.',
     'storage_key' => 'zenox-home-notice-hidden-until',
     'snooze_hours' => 2,
-    'snooze_label' => 'Không hiển thị lại trong 2 giờ',
+    'snooze_label' => 'Tạm ẩn trong 2 giờ',
     'cards' => [
         [
             'tone' => 'service',
@@ -27,7 +27,7 @@ $homeNoticeConfig = [
                 'variant' => 'primary',
                 'target' => '_blank',
             ],
-            'helper' => 'Ưu tiên hỗ trợ các nhu cầu triển khai nhanh và xử lý kỹ thuật cơ bản.',
+            'helper' => 'Phù hợp với nhu cầu triển khai website, panel, tools và các hỗ trợ kỹ thuật cơ bản.',
         ],
         [
             'tone' => 'community',
@@ -42,21 +42,21 @@ $homeNoticeConfig = [
                 'variant' => 'secondary',
                 'target' => '_blank',
             ],
-            'helper' => $zaloCommunityUrl !== '' ? 'Nhóm cộng đồng hỗ trợ hỏi đáp và thông báo nhanh.' : 'Đã chừa sẵn khu vực CTA. Chỉ cần thay link nhóm Zalo thật ở biến $zaloCommunityUrl.',
+            'helper' => $zaloCommunityUrl !== '' ? 'Nhóm cộng đồng hỗ trợ hỏi đáp nhanh và cập nhật thông tin mới.' : 'Link nhóm cộng đồng sẽ được cập nhật khi khu vực hỗ trợ chung được mở.',
         ],
         [
             'tone' => 'proxy',
             'icon' => 'fas fa-network-wired',
             'title' => 'Giới thiệu MTDProxy',
-            'badge' => 'Giới thiệu tạm thời',
+            'badge' => 'Dịch vụ mở rộng',
             'items' => [
                 'Proxy dân cư Viettel, FPT, VNPT',
                 'Proxy Datacenter Việt Nam & US',
                 'Proxy IPv4 Tĩnh chuyên dụng',
                 'Giá rẻ nhất, mua càng lâu giá càng rẻ',
-                '[Hiện chưa update]',
+                'Có thể tư vấn theo nhu cầu sử dụng thực tế',
             ],
-            'helper' => 'Mục này đang ở trạng thái giới thiệu sơ bộ để bạn biết định hướng dịch vụ, chưa phải nội dung hoàn thiện.',
+            'helper' => 'Nhóm dịch vụ proxy đang được hoàn thiện thêm nội dung chi tiết. Nếu cần báo giá nhanh, bạn có thể liên hệ trực tiếp.',
         ],
         [
             'tone' => 'support',
@@ -77,7 +77,7 @@ $homeNoticeConfig = [
                 'variant' => 'ghost',
                 'target' => '_blank',
             ],
-            'helper' => 'Nếu reboot xong vẫn không truy cập được, gửi mã dịch vụ để hỗ trợ kiểm tra nhanh hơn.',
+            'helper' => 'Nếu reboot xong vẫn chưa truy cập được, hãy gửi mã dịch vụ để bên mình kiểm tra nhanh hơn.',
         ],
     ],
 ];

@@ -7,7 +7,7 @@
 
     const dialog = popup.querySelector('.home-notice-popup__dialog');
     const closeTriggers = popup.querySelectorAll('[data-home-popup-close]');
-    const snoozeButton = popup.querySelector('[data-home-popup-snooze]');
+    const snoozeButtons = popup.querySelectorAll('[data-home-popup-snooze]');
     const storageKey = popup.dataset.storageKey || 'zenox-home-notice-hidden-until';
     const snoozeHours = Math.max(1, Number.parseInt(popup.dataset.snoozeHours || '2', 10) || 2);
     const bodyClass = 'home-popup-open';
@@ -96,11 +96,11 @@
         });
     });
 
-    if (snoozeButton) {
-        snoozeButton.addEventListener('click', () => {
+    snoozeButtons.forEach((button) => {
+        button.addEventListener('click', () => {
             hidePopup(true);
         });
-    }
+    });
 
     popup.addEventListener('click', (event) => {
         if (event.target === popup) {

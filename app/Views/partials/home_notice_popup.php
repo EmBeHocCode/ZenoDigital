@@ -7,6 +7,11 @@ $homeNoticeStorageKey = trim((string) ($homeNoticeConfig['storage_key'] ?? 'zeno
 $homeNoticeSnoozeHours = max(1, (int) ($homeNoticeConfig['snooze_hours'] ?? 2));
 $homeNoticeSnoozeLabel = trim((string) ($homeNoticeConfig['snooze_label'] ?? 'Không hiển thị lại trong 2 giờ'));
 $homeNoticeCards = is_array($homeNoticeConfig['cards'] ?? null) ? $homeNoticeConfig['cards'] : [];
+$homeNoticeSummaryPills = [
+    count($homeNoticeCards) . ' mục cần xem nhanh',
+    'Hỗ trợ thao tác ngay từ trang chủ',
+    $homeNoticeSnoozeLabel,
+];
 ?>
 
 <?php if ($homeNoticeCards !== []): ?>
@@ -38,22 +43,60 @@ $homeNoticeCards = is_array($homeNoticeConfig['cards'] ?? null) ? $homeNoticeCon
         </button>
 
         <div class="home-notice-popup__hero">
-            <div>
-                <span class="home-notice-popup__eyebrow"><?= e($homeNoticeBrand) ?></span>
+            <div class="home-notice-popup__hero-main">
+                <div class="home-notice-popup__hero-topline">
+                    <span class="home-notice-popup__eyebrow"><?= e($homeNoticeBrand) ?></span>
+                    <div class="home-notice-popup__hero-actions">
+                        <span class="home-notice-popup__meta-pill">
+                            <i class="fas fa-circle-info"></i>
+                            Popup này chỉ hiện ở trang chủ
+                        </span>
+                        <button
+                            type="button"
+                            class="home-notice-popup__quick-action"
+                            data-home-popup-snooze
+                        >
+                            <i class="fas fa-clock"></i>
+                            <?= e($homeNoticeSnoozeLabel) ?>
+                        </button>
+                    </div>
+                </div>
+
                 <h2 id="homeNoticePopupTitle"><?= e($homeNoticeTitle) ?></h2>
                 <?php if ($homeNoticeSubtitle !== ''): ?>
                     <p id="homeNoticePopupSubtitle"><?= e($homeNoticeSubtitle) ?></p>
                 <?php endif; ?>
+
+                <div class="home-notice-popup__hero-actions">
+                    <span class="home-notice-popup__meta-pill">
+                        <i class="fas fa-circle-info"></i>
+                        Popup này chỉ hiện ở trang chủ
+                    </span>
+                    <button
+                        type="button"
+                        class="home-notice-popup__quick-action"
+                        data-home-popup-snooze
+                    >
+                        <i class="fas fa-clock"></i>
+                        <?= e($homeNoticeSnoozeLabel) ?>
+                    </button>
+                </div>
+
+                <div class="home-notice-popup__summary">
+                    <?php foreach ($homeNoticeSummaryPills as $summaryItem): ?>
+                        <span class="home-notice-popup__summary-pill"><?= e((string) $summaryItem) ?></span>
+                    <?php endforeach; ?>
+                </div>
             </div>
 
-            <div class="home-notice-popup__meta">
-                <span class="home-notice-popup__meta-pill">
-                    <i class="fas fa-circle-info"></i>
-                    Popup này chỉ hiện ở trang chủ
-                </span>
+            <div class="home-notice-popup__meta-card">
+                <span class="home-notice-popup__meta-label">Hỗ trợ nhanh</span>
+                <strong>Mở đúng dịch vụ, vào đúng hướng dẫn, liên hệ đúng kênh.</strong>
+                <p>Popup này gom sẵn các mục mà người dùng thường cần nhất khi mới vào trang chủ.</p>
             </div>
         </div>
 
+        <div class="home-notice-popup__body">
         <div class="home-notice-popup__grid">
             <?php foreach ($homeNoticeCards as $card): ?>
                 <?php
@@ -120,6 +163,7 @@ $homeNoticeCards = is_array($homeNoticeConfig['cards'] ?? null) ? $homeNoticeCon
                     <?php endif; ?>
                 </article>
             <?php endforeach; ?>
+        </div>
         </div>
 
         <div class="home-notice-popup__footer">
