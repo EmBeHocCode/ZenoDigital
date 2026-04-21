@@ -10,7 +10,7 @@ This repository is intended to serve three purposes at once:
 
 ## Public Repository Update Note
 
-- Last public repository push: `2026-04-21 10:53:01 GMT+07:00`
+- Last public repository push: `2026-04-21 11:03:27 GMT+07:00`
 - Default branch target: `main`
 
 ## Overview
@@ -410,25 +410,25 @@ http://localhost/ZenoxDigital/public
 
 ## Screenshots
 
-The repository already contains lightweight preview assets that can be used on GitHub immediately and replaced later with real captures.
+The repository now includes real screenshots captured from the current application state.
 
 ### Current screenshot assets
 
-- ![Homepage Preview](docs/screenshots/homepage-preview.svg)
-- ![Admin Dashboard Preview](docs/screenshots/admin-dashboard-preview.svg)
-- ![AI Copilot Preview](docs/screenshots/ai-copilot-preview.svg)
-- ![SQL Manager Preview](docs/screenshots/sql-manager-preview.svg)
+- **Storefront homepage**
 
-### Suggested screenshots to add later
+  ![ZenoxDigital Homepage](docs/screenshots/homepage.png)
 
-- storefront homepage
-- product catalog
-- product detail page
-- profile / wallet page
-- admin dashboard
-- Meow Copilot panel
-- payment management screen
-- SQL Manager import/report screen
+- **Admin dashboard overview**
+
+  ![ZenoxDigital Admin Dashboard](docs/screenshots/admin-dashboard.png)
+
+- **Meow Copilot in admin dashboard**
+
+  ![ZenoxDigital Meow Copilot](docs/screenshots/ai-copilot.png)
+
+- **SQL Manager workbench**
+
+  ![ZenoxDigital SQL Manager](docs/screenshots/sql-manager.png)
 
 ## Technical Highlights / What This Project Demonstrates
 
