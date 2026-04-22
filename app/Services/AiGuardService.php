@@ -6,6 +6,22 @@ use App\Core\Database;
 
 class AiGuardService
 {
+    private const PROFIT_REQUIRED_FIELDS = [
+        'cost_price',
+        'min_margin_percent',
+        'platform_fee_percent',
+        'payment_fee_percent',
+        'ads_cost_per_order',
+        'delivery_cost',
+    ];
+
+    private const CAPACITY_REQUIRED_FIELDS = [
+        'product_type',
+        'stock_qty',
+        'capacity_limit',
+        'capacity_used',
+    ];
+
     private array $config;
 
     public function __construct(array $config)
@@ -30,32 +46,33 @@ class AiGuardService
 
     public function getMissingFinancialFields(): array
     {
-        $requiredFields = [
-            'cost_price',
-            'stock_qty',
-            'reorder_point',
-            'supplier_name',
-            'lead_time_days',
-            'min_margin_percent',
-            'product_type',
-            'capacity_limit',
-            'capacity_used',
-            'is_digital_code',
-            'platform_fee_percent',
-            'payment_fee_percent',
-            'ads_cost_per_order',
-            'delivery_cost',
-        ];
+        $requiredFields = array_values(array_unique(array_merge(
+            self::PROFIT_REQUIRED_FIELDS,
+            self::CAPACITY_REQUIRED_FIELDS,
+            ['reorder_point', 'supplier_name', 'lead_time_days']
+        )));
 
-        try {
-            $db = Database::getConnection($this->config['db']);
-            $stmt = $db->query('SHOW COLUMNS FROM products');
-            $columns = array_map(static fn(array $row): string => (string) ($row['Field'] ?? ''), $stmt->fetchAll() ?: []);
-        } catch (\Throwable $exception) {
-            return $requiredFields;
-        }
+        return $this->getMissingColumns($requiredFields);
+    }
 
-        return array_values(array_diff($requiredFields, $columns));
+    public function getMissingProfitFields(): array
+    {
+        return $this->getMissingColumns(self::PROFIT_REQUIRED_FIELDS);
+    }
+
+    public function getMissingCapacityFields(): array
+    {
+        return $this->getMissingColumns(self::CAPACITY_REQUIRED_FIELDS);
+    }
+
+    public function getInsufficientProfitFields(): array
+    {
+        return $this->getColumnsWithoutData(self::PROFIT_REQUIRED_FIELDS);
+    }
+
+    public function getInsufficientCapacityFields(): array
+    {
+        return $this->getColumnsWithoutData(self::CAPACITY_REQUIRED_FIELDS);
     }
 
     public function buildCapabilityWarnings(array $capabilities): array
@@ -63,13 +80,25 @@ class AiGuardService
         $warnings = [];
         $capabilities = $this->normalizeCapabilities($capabilities);
 
-        $profitSensitiveCapabilities = ['promotion_advisor', 'capacity_advisor', 'profit_guard'];
-        $requiresFinancialCheck = array_intersect($profitSensitiveCapabilities, $capabilities);
+        $requiresProfitCheck = array_intersect(['promotion_advisor', 'profit_guard'], $capabilities);
+        if ($requiresProfitCheck) {
+            $fieldGaps = $this->mergeFieldGaps(
+                $this->getMissingProfitFields(),
+                $this->getInsufficientProfitFields()
+            );
+            if ($fieldGaps) {
+                $warnings[] = 'Thiếu dữ liệu cho phân tích lợi nhuận/khuyến mãi: ' . implode(', ', $fieldGaps);
+            }
+        }
 
-        if ($requiresFinancialCheck) {
-            $missingFields = $this->getMissingFinancialFields();
-            if ($missingFields) {
-                $warnings[] = 'Thiếu dữ liệu cho phân tích tài chính/capacity: ' . implode(', ', $missingFields);
+        $requiresCapacityCheck = array_intersect(['capacity_advisor'], $capabilities);
+        if ($requiresCapacityCheck) {
+            $fieldGaps = $this->mergeFieldGaps(
+                $this->getMissingCapacityFields(),
+                $this->getInsufficientCapacityFields()
+            );
+            if ($fieldGaps) {
+                $warnings[] = 'Thiếu dữ liệu cho phân tích tồn kho/capacity: ' . implode(', ', $fieldGaps);
             }
         }
 
@@ -160,8 +189,10 @@ class AiGuardService
             return null;
         }
 
-        $missingFields = $this->getMissingFinancialFields();
-        if ($missingFields === []) {
+        $missingColumns = $this->getMissingCapacityFields();
+        $insufficientFields = $this->getInsufficientCapacityFields();
+        $fieldGaps = $this->mergeFieldGaps($missingColumns, $insufficientFields);
+        if ($fieldGaps === []) {
             return null;
         }
 
@@ -174,11 +205,18 @@ class AiGuardService
 
         return [
             'capabilities' => $hardBlocked,
-            'missing_fields' => $missingFields,
+            'missing_fields' => $fieldGaps,
+            'missing_columns' => $missingColumns,
+            'insufficient_fields' => $insufficientFields,
             'message' => 'Mình chưa thể kết luận về ' . implode(', ', array_unique($labels))
-                . ' vì schema hiện tại chưa đủ dữ liệu thật. Thiếu các cột: '
-                . implode(', ', $missingFields)
-                . '. Với khuyến mãi hoặc upsell, Meow chỉ nên dừng ở mức gợi ý sơ bộ chứ không khẳng định capacity hay lời/lỗ.',
+                . ' vì dữ liệu thật chưa đủ. '
+                . ($missingColumns !== []
+                    ? 'Thiếu cột schema: ' . implode(', ', $missingColumns) . '. '
+                    : '')
+                . ($insufficientFields !== []
+                    ? 'Các cột chưa có dữ liệu vận hành: ' . implode(', ', $insufficientFields) . '. '
+                    : '')
+                . 'Với khuyến mãi hoặc upsell, Meow chỉ nên dừng ở mức gợi ý sơ bộ chứ không khẳng định capacity hay lời/lỗ.',
         ];
     }
 
@@ -348,5 +386,97 @@ class AiGuardService
         }
 
         return false;
+    }
+
+    private function mergeFieldGaps(array ...$groups): array
+    {
+        $merged = [];
+        foreach ($groups as $group) {
+            foreach ($group as $field) {
+                $normalized = strtolower(trim((string) $field));
+                if ($normalized !== '') {
+                    $merged[$normalized] = true;
+                }
+            }
+        }
+
+        return array_values(array_keys($merged));
+    }
+
+    private function getColumnsWithoutData(array $requiredFields): array
+    {
+        $requiredFields = array_values(array_unique(array_filter(array_map(
+            static fn($item): string => strtolower(trim((string) $item)),
+            $requiredFields
+        ))));
+        if ($requiredFields === []) {
+            return [];
+        }
+
+        $missingColumns = $this->getMissingColumns($requiredFields);
+        $availableFields = array_values(array_diff($requiredFields, $missingColumns));
+        if ($availableFields === []) {
+            return [];
+        }
+
+        try {
+            $db = Database::getConnection($this->config['db']);
+            $totalActiveProducts = (int) ($db->query("SELECT COUNT(*) AS total FROM products WHERE deleted_at IS NULL AND status = 'active'")->fetch()['total'] ?? 0);
+            if ($totalActiveProducts <= 0) {
+                return $availableFields;
+            }
+
+            $insufficient = [];
+            foreach ($availableFields as $field) {
+                if (preg_match('/^[a-z0-9_]+$/', $field) !== 1) {
+                    continue;
+                }
+
+                $presenceExpression = $this->columnPresenceExpression($field);
+                $sql = "SELECT COUNT(*) AS total
+                    FROM products
+                    WHERE deleted_at IS NULL
+                      AND status = 'active'
+                      AND {$presenceExpression}";
+                $count = (int) ($db->query($sql)->fetch()['total'] ?? 0);
+                if ($count <= 0) {
+                    $insufficient[] = $field;
+                }
+            }
+
+            return $insufficient;
+        } catch (\Throwable $exception) {
+            return $availableFields;
+        }
+    }
+
+    private function columnPresenceExpression(string $field): string
+    {
+        return match ($field) {
+            'product_type', 'supplier_name' => "`{$field}` IS NOT NULL AND TRIM(`{$field}`) <> ''",
+            default => "`{$field}` IS NOT NULL",
+        };
+    }
+
+    private function getMissingColumns(array $requiredFields): array
+    {
+        $requiredFields = array_values(array_unique(array_filter(array_map(
+            static fn($item): string => strtolower(trim((string) $item)),
+            $requiredFields
+        ))));
+
+        if ($requiredFields === []) {
+            return [];
+        }
+
+        try {
+            $db = Database::getConnection($this->config['db']);
+            $stmt = $db->query('SHOW COLUMNS FROM products');
+            $columns = array_map(static fn(array $row): string => strtolower((string) ($row['Field'] ?? '')), $stmt->fetchAll() ?: []);
+        } catch (\Throwable $exception) {
+            return $requiredFields;
+        }
+
+        return array_values(array_diff($requiredFields, $columns));
     }
 }

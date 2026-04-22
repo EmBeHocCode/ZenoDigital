@@ -197,7 +197,59 @@ class Product extends Model
 
     public function create(array $data): int|false
     {
-        $stmt = $this->db->prepare('INSERT INTO products (category_id, name, slug, price, short_description, description, specs, image, stock_status, status, created_at, updated_at) VALUES (:category_id, :name, :slug, :price, :short_description, :description, :specs, :image, :stock_status, :status, NOW(), NOW())');
+        $stmt = $this->db->prepare('INSERT INTO products (
+                category_id,
+                name,
+                slug,
+                price,
+                product_type,
+                stock_qty,
+                reorder_point,
+                supplier_name,
+                lead_time_days,
+                cost_price,
+                min_margin_percent,
+                platform_fee_percent,
+                payment_fee_percent,
+                ads_cost_per_order,
+                delivery_cost,
+                capacity_limit,
+                capacity_used,
+                short_description,
+                description,
+                specs,
+                image,
+                stock_status,
+                status,
+                created_at,
+                updated_at
+            ) VALUES (
+                :category_id,
+                :name,
+                :slug,
+                :price,
+                :product_type,
+                :stock_qty,
+                :reorder_point,
+                :supplier_name,
+                :lead_time_days,
+                :cost_price,
+                :min_margin_percent,
+                :platform_fee_percent,
+                :payment_fee_percent,
+                :ads_cost_per_order,
+                :delivery_cost,
+                :capacity_limit,
+                :capacity_used,
+                :short_description,
+                :description,
+                :specs,
+                :image,
+                :stock_status,
+                :status,
+                NOW(),
+                NOW()
+            )');
         $ok = $stmt->execute($data);
         return $ok ? (int) $this->db->lastInsertId() : false;
     }
@@ -205,7 +257,32 @@ class Product extends Model
     public function update(int $id, array $data): bool
     {
         $data['id'] = $id;
-        $stmt = $this->db->prepare('UPDATE products SET category_id = :category_id, name = :name, slug = :slug, price = :price, short_description = :short_description, description = :description, specs = :specs, image = :image, stock_status = :stock_status, status = :status, updated_at = NOW() WHERE id = :id');
+        $stmt = $this->db->prepare('UPDATE products SET
+                category_id = :category_id,
+                name = :name,
+                slug = :slug,
+                price = :price,
+                product_type = :product_type,
+                stock_qty = :stock_qty,
+                reorder_point = :reorder_point,
+                supplier_name = :supplier_name,
+                lead_time_days = :lead_time_days,
+                cost_price = :cost_price,
+                min_margin_percent = :min_margin_percent,
+                platform_fee_percent = :platform_fee_percent,
+                payment_fee_percent = :payment_fee_percent,
+                ads_cost_per_order = :ads_cost_per_order,
+                delivery_cost = :delivery_cost,
+                capacity_limit = :capacity_limit,
+                capacity_used = :capacity_used,
+                short_description = :short_description,
+                description = :description,
+                specs = :specs,
+                image = :image,
+                stock_status = :stock_status,
+                status = :status,
+                updated_at = NOW()
+            WHERE id = :id');
         return $stmt->execute($data);
     }
 

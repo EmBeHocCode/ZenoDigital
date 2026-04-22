@@ -175,7 +175,7 @@ class AiPersonaService
                 'Người dùng là admin/backoffice đã được xác thực từ backend. Dù họ ở dashboard hay storefront, vẫn nói như trợ lý quản trị nội bộ.',
                 'Nếu cần mở đầu, có thể dùng cách tự nhiên như: "Chào ' . ($safeAddressing !== '' ? $safeAddressing : 'bạn') . ', Meow đang ở chế độ hỗ trợ quản trị."',
                 'Ưu tiên tự xưng "Meow" hoặc "mình". Không tự chuyển sang cặp xưng hô "anh/em" nếu context không yêu cầu rõ.',
-                'Ưu tiên trả lời theo hướng: đơn hàng, doanh thu, sản phẩm, coupon, feedback, tác vụ tiếp theo.',
+                'Ưu tiên trả lời theo hướng: đơn hàng, doanh thu, sản phẩm, coupon, feedback, tồn kho/capacity và tác vụ tiếp theo.',
                 'Không dùng giọng CSKH kiểu tư vấn mua hàng cho admin.',
                 'Nếu intent đọc dữ liệu đã đủ rõ thì chạy thẳng, không hỏi lại để xác nhận.',
                 'Chỉ hỏi lại khi thiếu đúng tham số bắt buộc. Khi hỏi lại chỉ hỏi 1 câu ngắn, không nhắc lại toàn bộ câu người dùng vừa nói.',
@@ -448,15 +448,15 @@ class AiPersonaService
             'welcome_title' => $isProductContext ? 'Meow theo dõi gói này' : 'Meow Copilot quản trị',
             'welcome_text' => $isProductContext
                 ? 'Meow có thể tóm tắt nhanh hiệu suất, đơn hàng và phản hồi liên quan tới gói này.'
-                : 'Meow hỗ trợ quản trị với đơn hàng, doanh thu, sản phẩm, coupon và phản hồi khách.',
+                : 'Meow hỗ trợ quản trị với đơn hàng, doanh thu, sản phẩm, coupon, capacity và phản hồi khách.',
             'welcome_hint' => 'Chào ' . ($safeAddressing !== '' ? $safeAddressing : 'bạn') . ', Meow đang ở chế độ hỗ trợ quản trị. Bạn có thể chọn một tác vụ nhanh bên dưới.',
-            'meta_text' => 'Chế độ copilot nội bộ: ưu tiên đơn hàng, doanh thu, sản phẩm và phản hồi khách.',
+            'meta_text' => 'Chế độ copilot nội bộ: ưu tiên đơn hàng, doanh thu, sản phẩm, capacity và phản hồi khách.',
             'default_status' => 'Chạm một tác vụ để bắt đầu nhanh hơn.',
             'prompts_dismissed_status' => 'Đã ẩn tác vụ nhanh cho lần mở widget này.',
             'bridge_status' => 'Meow copilot đã phản hồi.',
             'fallback_status' => 'Meow đang phản hồi bằng chế độ dự phòng kỹ thuật.',
             'utility_title' => 'Tiện ích quản trị',
-            'input_placeholder' => 'Ví dụ: tuần này nên đẩy gói nào hoặc nên khuyến mãi gì cho nhóm Cloud VPS',
+            'input_placeholder' => 'Ví dụ: nhóm nào sắp chạm capacity hoặc nên khuyến mãi gì cho Cloud VPS?',
             'supports_feedback' => false,
             'starter_prompts' => $isProductContext
                 ? [
@@ -464,6 +464,7 @@ class AiPersonaService
                     'Có gói nào phù hợp làm upsell không?',
                     'Nên khuyến mãi gì cho nhóm Cloud VPS?',
                     'Sản phẩm nào nên đưa lên homepage?',
+                    'Gói này có nguy cơ chạm capacity không?',
                     'Nếu chưa có giá vốn thì hiện tại em gợi ý được tới mức nào?',
                 ]
                 : [
@@ -471,11 +472,13 @@ class AiPersonaService
                     'Nên khuyến mãi gì cho nhóm Cloud VPS?',
                     'Có gói nào phù hợp làm upsell không?',
                     'Sản phẩm nào nên đưa lên homepage?',
+                    'Nhóm nào sắp chạm capacity?',
                     'Có coupon nào đang nên bật hoặc nên tắt không?',
                 ],
             'utility_actions' => $isProductContext
                 ? [
                     ['kind' => 'prompt', 'icon' => 'fa-chart-line', 'label' => 'Hiệu suất gói', 'value' => 'Gói này đang bán thế nào?'],
+                    ['kind' => 'prompt', 'icon' => 'fa-server', 'label' => 'Capacity gói', 'value' => 'Gói này có nguy cơ chạm capacity không?'],
                     ['kind' => 'prompt', 'icon' => 'fa-receipt', 'label' => 'Đơn chờ xử lý', 'value' => 'Xem nhanh đơn chờ xử lý'],
                     ['kind' => 'prompt', 'icon' => 'fa-comments', 'label' => 'Feedback mới', 'value' => 'Có feedback mới nào không'],
                     ['kind' => 'prompt', 'icon' => 'fa-ticket', 'label' => 'Coupon hiện tại', 'value' => 'Tình trạng coupon hiện tại'],
@@ -483,6 +486,7 @@ class AiPersonaService
                 ]
                 : [
                     ['kind' => 'prompt', 'icon' => 'fa-receipt', 'label' => 'Đơn chờ xử lý', 'value' => 'Xem nhanh đơn chờ xử lý'],
+                    ['kind' => 'prompt', 'icon' => 'fa-server', 'label' => 'Capacity', 'value' => 'Nhóm nào sắp chạm capacity?'],
                     ['kind' => 'prompt', 'icon' => 'fa-sack-dollar', 'label' => 'Doanh thu hôm nay', 'value' => 'Tóm tắt doanh thu hôm nay'],
                     ['kind' => 'prompt', 'icon' => 'fa-fire', 'label' => 'Sản phẩm bán chạy', 'value' => 'Sản phẩm nào đang bán chạy'],
                     ['kind' => 'prompt', 'icon' => 'fa-comments', 'label' => 'Feedback mới', 'value' => 'Có feedback mới nào không'],
@@ -502,33 +506,36 @@ class AiPersonaService
             'welcome_title' => $isProductContext ? 'Meow hỗ trợ vận hành gói này' : 'Meow hỗ trợ vận hành',
             'welcome_text' => $isProductContext
                 ? 'Meow có thể rà nhanh đơn, hỗ trợ kỹ thuật và feedback liên quan tới gói này.'
-                : 'Meow hỗ trợ staff kiểm tra đơn, phản hồi khách và các tác vụ vận hành thường gặp.',
+                : 'Meow hỗ trợ staff kiểm tra đơn, phản hồi khách, coupon và cảnh báo capacity cơ bản.',
             'welcome_hint' => 'Chào ' . ($safeAddressing !== '' ? $safeAddressing : 'bạn') . ', Meow đang ở chế độ hỗ trợ vận hành. Bạn có thể chọn một tác vụ nhanh bên dưới.',
-            'meta_text' => 'Chế độ staff support: ưu tiên đơn chờ xử lý, hỗ trợ kỹ thuật và phản hồi khách.',
+            'meta_text' => 'Chế độ staff support: ưu tiên đơn chờ xử lý, hỗ trợ kỹ thuật, phản hồi khách và cảnh báo capacity.',
             'default_status' => 'Chạm một tác vụ để bắt đầu nhanh hơn.',
             'prompts_dismissed_status' => 'Đã ẩn tác vụ nhanh cho lần mở widget này.',
             'bridge_status' => 'Meow hỗ trợ vận hành đã phản hồi.',
             'fallback_status' => 'Meow đang phản hồi bằng chế độ dự phòng kỹ thuật.',
             'utility_title' => 'Tiện ích vận hành',
-            'input_placeholder' => 'Ví dụ: còn feedback nào cần xử lý gấp không?',
+            'input_placeholder' => 'Ví dụ: nhóm nào sắp chạm capacity để xử lý sớm?',
             'supports_feedback' => false,
             'starter_prompts' => $isProductContext
                 ? [
                     'Có feedback nào liên quan gói này không?',
                     'Đơn chờ xử lý hiện tại',
                     'Có hỗ trợ kỹ thuật nào cần chú ý không?',
+                    'Gói này có nguy cơ chạm capacity không?',
                     'Tình trạng coupon hiện tại',
                 ]
                 : [
                     'Đơn chờ xử lý hiện tại',
                     'Có feedback mới nào không',
                     'Có hỗ trợ kỹ thuật nào cần chú ý không?',
+                    'Nhóm nào sắp chạm capacity?',
                     'Tình trạng coupon hiện tại',
                 ],
             'utility_actions' => [
                 ['kind' => 'prompt', 'icon' => 'fa-receipt', 'label' => 'Đơn chờ xử lý', 'value' => 'Đơn chờ xử lý hiện tại'],
                 ['kind' => 'prompt', 'icon' => 'fa-comments', 'label' => 'Feedback mới', 'value' => 'Có feedback mới nào không'],
                 ['kind' => 'prompt', 'icon' => 'fa-headset', 'label' => 'Hỗ trợ kỹ thuật', 'value' => 'Có hỗ trợ kỹ thuật nào cần chú ý không?'],
+                ['kind' => 'prompt', 'icon' => 'fa-server', 'label' => 'Capacity', 'value' => 'Nhóm nào sắp chạm capacity?'],
                 ['kind' => 'prompt', 'icon' => 'fa-ticket', 'label' => 'Coupon hiện tại', 'value' => 'Tình trạng coupon hiện tại'],
                 ['kind' => 'reset', 'icon' => 'fa-rotate-right', 'label' => 'Bắt đầu lại'],
             ],
@@ -546,9 +553,9 @@ class AiPersonaService
             'welcome_title' => $isProductContext ? 'Meow tóm tắt gói này' : 'Meow hỗ trợ điều hành',
             'welcome_text' => $isProductContext
                 ? 'Meow có thể tóm tắt nhanh tín hiệu bán hàng và phản hồi liên quan tới gói này.'
-                : 'Meow hỗ trợ role quản trị với tóm tắt doanh thu, sản phẩm nổi bật, coupon và phản hồi khách.',
+                : 'Meow hỗ trợ role quản trị với tóm tắt doanh thu, sản phẩm nổi bật, coupon, capacity và phản hồi khách.',
             'welcome_hint' => 'Chào ' . ($safeAddressing !== '' ? $safeAddressing : 'bạn') . ', Meow đang ở chế độ hỗ trợ điều hành. Bạn có thể chọn một tác vụ nhanh bên dưới.',
-            'meta_text' => 'Chế độ management support: ưu tiên tóm tắt nhanh, tín hiệu cần chú ý và bước tiếp theo.',
+            'meta_text' => 'Chế độ management support: ưu tiên tóm tắt nhanh, tín hiệu cần chú ý, capacity và bước tiếp theo.',
             'default_status' => 'Chạm một tác vụ để bắt đầu nhanh hơn.',
             'prompts_dismissed_status' => 'Đã ẩn tác vụ nhanh cho lần mở widget này.',
             'bridge_status' => 'Meow hỗ trợ điều hành đã phản hồi.',
@@ -561,18 +568,21 @@ class AiPersonaService
                     'Gói này đang bán thế nào?',
                     'Có feedback mới nào không',
                     'Tóm tắt doanh thu hôm nay',
+                    'Gói này có nguy cơ chạm capacity không?',
                     'Tình trạng coupon hiện tại',
                 ]
                 : [
                     'Tóm tắt doanh thu hôm nay',
                     'Sản phẩm nào đang bán chạy',
                     'Có feedback mới nào không',
+                    'Nhóm nào sắp chạm capacity?',
                     'Tình trạng coupon hiện tại',
                 ],
             'utility_actions' => [
                 ['kind' => 'prompt', 'icon' => 'fa-sack-dollar', 'label' => 'Doanh thu hôm nay', 'value' => 'Tóm tắt doanh thu hôm nay'],
                 ['kind' => 'prompt', 'icon' => 'fa-fire', 'label' => 'Sản phẩm bán chạy', 'value' => 'Sản phẩm nào đang bán chạy'],
                 ['kind' => 'prompt', 'icon' => 'fa-comments', 'label' => 'Feedback mới', 'value' => 'Có feedback mới nào không'],
+                ['kind' => 'prompt', 'icon' => 'fa-server', 'label' => 'Capacity', 'value' => 'Nhóm nào sắp chạm capacity?'],
                 ['kind' => 'prompt', 'icon' => 'fa-ticket', 'label' => 'Coupon hiện tại', 'value' => 'Tình trạng coupon hiện tại'],
                 ['kind' => 'reset', 'icon' => 'fa-rotate-right', 'label' => 'Bắt đầu lại'],
             ],

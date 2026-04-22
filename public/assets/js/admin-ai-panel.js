@@ -684,6 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ...(Array.isArray(recommendationBuckets.promotions) ? recommendationBuckets.promotions.slice(0, 2) : []),
             ...(Array.isArray(recommendationBuckets.coupon_actions) ? recommendationBuckets.coupon_actions.slice(0, 1) : []),
         ]));
+        sections.push(renderRecommendationSection('Nhập hàng / capacity', Array.isArray(recommendationBuckets.capacity) ? recommendationBuckets.capacity.slice(0, 3) : []));
 
         const dataGapNotes = Array.isArray(salesRecommendations?.data_gaps?.notes) ? salesRecommendations.data_gaps.notes.slice(0, 4) : [];
         sections.push(renderListSection('Giới hạn dữ liệu', dataGapNotes.map((note) => `

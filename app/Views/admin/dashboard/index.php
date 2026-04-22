@@ -271,7 +271,7 @@ $orderStatusChart = array_map(static function (array $item): array {
                 <div class="admin-card-body">
                     <div class="d-flex flex-column gap-2">
                         <div class="fw-semibold">Bạn có thể hỏi ngay:</div>
-                        <div class="small text-secondary">Xem nhanh đơn chờ xử lý, sản phẩm bán chạy, feedback mới hoặc tình trạng coupon.</div>
+                        <div class="small text-secondary">Xem nhanh đơn chờ xử lý, sản phẩm bán chạy, feedback mới, tình trạng coupon hoặc cảnh báo nhập hàng/capacity.</div>
                         <?php if ($canUseAdminAi): ?>
                             <button class="btn btn-outline-primary align-self-start" type="button" data-admin-ai-open>
                                 Mở Meow Copilot

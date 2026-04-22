@@ -126,6 +126,14 @@ class AdminAiIntentService
             ];
         }
 
+        if ($this->containsAny($haystack, ['capacity', 'ton kho', 'tồn kho', 'nhap hang', 'nhập hàng', 'het slot', 'hết slot', 'restock'])) {
+            return [
+                'action' => 'execute',
+                'intent' => 'capacity_overview',
+                'confidence' => 'high',
+            ];
+        }
+
         $mutationDecision = $this->resolveMutationIntent($original !== '' ? $original : $normalized, $haystack);
         if ($mutationDecision !== null) {
             return $mutationDecision;
@@ -203,6 +211,7 @@ class AdminAiIntentService
             'current_coupons' => $this->executeCurrentCoupons(),
             'top_products' => $this->executeTopProducts($backofficeScope),
             'homepage_spotlight' => $this->executeHomepageSpotlight($backofficeScope),
+            'capacity_overview' => $this->executeCapacityOverview($backofficeScope),
             'wallet_transactions' => $this->executeWalletTransactions($backofficeScope),
             'rank_overview' => $this->executeRankOverview($backofficeScope),
             'settings_overview' => $this->executeSettingsOverview($backofficeScope),
@@ -479,6 +488,51 @@ class AdminAiIntentService
             . "\nNext action: giữ tối đa 2 gói cloud entry/mid-tier ở hero để tránh loãng thông điệp.";
 
         return $this->directEnvelope('homepage_spotlight', $reply);
+    }
+
+    private function executeCapacityOverview(array $backofficeScope): array
+    {
+        $recommendationService = new AiSalesRecommendationService($this->config);
+        $payload = $recommendationService->build($backofficeScope);
+        $capacityItems = array_slice((array) (($payload['recommendations'] ?? [])['capacity'] ?? []), 0, 3);
+        $missingCapacityFields = array_values(array_map('strval', (array) (($payload['data_gaps'] ?? [])['missing_capacity_fields'] ?? [])));
+        $insufficientCapacityFields = array_values(array_map('strval', (array) (($payload['data_gaps'] ?? [])['insufficient_capacity_fields'] ?? [])));
+
+        if ($missingCapacityFields !== [] || $insufficientCapacityFields !== []) {
+            $details = [];
+            if ($missingCapacityFields !== []) {
+                $details[] = 'thiếu cột schema: ' . implode(', ', $missingCapacityFields);
+            }
+            if ($insufficientCapacityFields !== []) {
+                $details[] = 'chưa có dữ liệu vận hành tại: ' . implode(', ', $insufficientCapacityFields);
+            }
+
+            return $this->directEnvelope(
+                'capacity_overview',
+                'Hiện chưa thể kết luận nhập hàng/capacity vì ' . implode('; ', $details) . "."
+                . "\nNext action: cập nhật đủ schema và dữ liệu cho các cột này trước khi bật cảnh báo tồn kho/slot."
+            );
+        }
+
+        if ($capacityItems === []) {
+            return $this->directEnvelope(
+                'capacity_overview',
+                'Snapshot hiện tại chưa có SKU nào chạm ngưỡng cảnh báo tồn kho/capacity.'
+                . "\nNext action: tiếp tục theo dõi stock/capacity theo ngày, ưu tiên nhóm Cloud/VPS."
+            );
+        }
+
+        $lines = array_map(static function (array $row): string {
+            return '- ' . (string) ($row['product_name'] ?? 'N/A')
+                . ' · ' . (string) ($row['reason'] ?? 'chưa có lý do')
+                . ' · Next: ' . (string) ($row['next_action'] ?? 'theo dõi thêm');
+        }, $capacityItems);
+
+        $reply = 'Cảnh báo nhập hàng/capacity từ snapshot hiện tại:'
+            . "\n" . implode("\n", $lines)
+            . "\nLưu ý: đây là phân tích theo dữ liệu thật trong schema hiện có, không suy diễn lời/lỗ.";
+
+        return $this->directEnvelope('capacity_overview', $reply);
     }
 
     private function executeWalletTransactions(array $backofficeScope): array

@@ -17,6 +17,7 @@ class AiSalesRecommendationService
     private Category $categoryModel;
     private Coupon $couponModel;
     private AiGuardService $guardService;
+    private ?array $productColumns = null;
 
     public function __construct(array $config)
     {
@@ -41,7 +42,25 @@ class AiSalesRecommendationService
         $latestCoupons = $this->couponModel->latest(10);
         $pairSignals = $this->coPurchasePairs(self::ANALYSIS_WINDOW_DAYS);
         $pendingCloudSignals = $this->pendingCloudSignals($cloudCategoryIds, self::ANALYSIS_WINDOW_DAYS);
-        $missingFinancialFields = $this->guardService->getMissingFinancialFields();
+        $missingProfitFields = $this->guardService->getMissingProfitFields();
+        $missingCapacityFields = $this->guardService->getMissingCapacityFields();
+        $insufficientProfitFields = $this->guardService->getInsufficientProfitFields();
+        $insufficientCapacityFields = $this->guardService->getInsufficientCapacityFields();
+        $profitDataGaps = array_values(array_unique(array_merge($missingProfitFields, $insufficientProfitFields)));
+        $capacityDataGaps = array_values(array_unique(array_merge($missingCapacityFields, $insufficientCapacityFields)));
+        $missingFinancialFields = array_values(array_unique(array_merge(
+            $this->guardService->getMissingFinancialFields(),
+            $profitDataGaps,
+            $capacityDataGaps
+        )));
+        $cannotConfirm = [
+            'lời/lỗ thực tế',
+            'mức giảm tối đa an toàn theo biên lợi nhuận',
+            'cross-sell pattern đủ mạnh để tự động hóa',
+        ];
+        if ($capacityDataGaps !== []) {
+            $cannotConfirm[] = 'capacity hoặc stock risk';
+        }
         $catalogSummary = $this->catalogSummary($products, $cloudProducts);
         $recommendations = [
             'push' => $this->buildPushRecommendations($cloudProducts, $salesByProduct, $canViewFinance),
@@ -50,6 +69,7 @@ class AiSalesRecommendationService
             'cross_sell' => $this->buildCrossSellRecommendations($pairSignals),
             'promotions' => $this->buildPromotionRecommendations($cloudProducts, $salesByProduct, $couponSummary, $latestCoupons),
             'coupon_actions' => $this->buildCouponActions($couponSummary, $latestCoupons),
+            'capacity' => $this->buildCapacityRecommendations($cloudProducts, $salesByProduct, $pendingCloudSignals, $capacityDataGaps),
         ];
 
         return [
@@ -65,7 +85,32 @@ class AiSalesRecommendationService
                 'reason' => 'Nhóm Cloud/VPS đang là mảng core vì chiếm phần lớn SKU active và storefront hiện xoay quanh nhóm này.',
             ],
             'data_used' => [
-                'product_fields' => ['category_id', 'name', 'slug', 'price', 'short_description', 'description', 'specs', 'image', 'stock_status', 'status', 'created_at'],
+                'product_fields' => [
+                    'category_id',
+                    'name',
+                    'slug',
+                    'price',
+                    'product_type',
+                    'stock_qty',
+                    'reorder_point',
+                    'supplier_name',
+                    'lead_time_days',
+                    'cost_price',
+                    'min_margin_percent',
+                    'platform_fee_percent',
+                    'payment_fee_percent',
+                    'ads_cost_per_order',
+                    'delivery_cost',
+                    'capacity_limit',
+                    'capacity_used',
+                    'short_description',
+                    'description',
+                    'specs',
+                    'image',
+                    'stock_status',
+                    'status',
+                    'created_at',
+                ],
                 'order_fields' => ['status', 'created_at', 'total_amount', 'order_items.quantity', 'order_items.unit_price', 'order_items.total_price'],
                 'coupon_fields' => ['code', 'description', 'discount_percent', 'max_uses', 'used_count', 'expires_at', 'status'],
                 'coupon_rows' => count($latestCoupons),
@@ -79,17 +124,24 @@ class AiSalesRecommendationService
                     'thứ tự ưu tiên homepage cho cloud',
                     'upsell ladder theo giá và cấu hình hiện có',
                     'coupon pilot và khuyến mãi nhẹ ở mức sơ bộ',
+                    'gợi ý nhập hàng/capacity ở mức dữ liệu hiện có',
                 ],
-                'cannot_confirm' => [
-                    'lời/lỗ thực tế',
-                    'mức giảm tối đa an toàn theo biên lợi nhuận',
-                    'capacity hoặc stock risk',
-                    'cross-sell pattern đủ mạnh để tự động hóa',
-                ],
+                'cannot_confirm' => $cannotConfirm,
             ],
             'data_gaps' => [
                 'missing_fields' => $missingFinancialFields,
-                'notes' => $this->buildDataGapNotes($couponSummary, $pairSignals),
+                'missing_profit_fields' => $missingProfitFields,
+                'missing_capacity_fields' => $missingCapacityFields,
+                'insufficient_profit_fields' => $insufficientProfitFields,
+                'insufficient_capacity_fields' => $insufficientCapacityFields,
+                'notes' => $this->buildDataGapNotes(
+                    $couponSummary,
+                    $pairSignals,
+                    $missingProfitFields,
+                    $missingCapacityFields,
+                    $insufficientProfitFields,
+                    $insufficientCapacityFields
+                ),
             ],
             'recommendations' => $recommendations,
             'action_queue' => $this->buildActionQueue($recommendations),
@@ -98,21 +150,45 @@ class AiSalesRecommendationService
 
     private function activeProducts(): array
     {
+        $availableColumns = array_flip($this->availableProductColumns());
+        $selectColumns = [
+            'p.id',
+            'p.category_id',
+            'p.name',
+            'p.slug',
+            'p.price',
+            'p.short_description',
+            'p.description',
+            'p.specs',
+            'p.image',
+            'p.stock_status',
+            'p.status',
+            'p.created_at',
+        ];
+
+        $optionalColumns = [
+            'product_type' => 'p.product_type',
+            'stock_qty' => 'p.stock_qty',
+            'reorder_point' => 'p.reorder_point',
+            'supplier_name' => 'p.supplier_name',
+            'lead_time_days' => 'p.lead_time_days',
+            'min_margin_percent' => 'p.min_margin_percent',
+            'capacity_limit' => 'p.capacity_limit',
+            'capacity_used' => 'p.capacity_used',
+            'cost_price' => 'p.cost_price',
+        ];
+
+        foreach ($optionalColumns as $column => $select) {
+            if (isset($availableColumns[$column])) {
+                $selectColumns[] = $select;
+            }
+        }
+
+        $selectColumns[] = 'c.name AS category_name';
+        $selectColumns[] = 'c.slug AS category_slug';
+
         $stmt = $this->db->query("SELECT
-                p.id,
-                p.category_id,
-                p.name,
-                p.slug,
-                p.price,
-                p.short_description,
-                p.description,
-                p.specs,
-                p.image,
-                p.stock_status,
-                p.status,
-                p.created_at,
-                c.name AS category_name,
-                c.slug AS category_slug
+                " . implode(",\n                ", $selectColumns) . "
             FROM products p
             INNER JOIN categories c ON c.id = p.category_id
             WHERE p.deleted_at IS NULL
@@ -641,11 +717,138 @@ class AiSalesRecommendationService
         return $actions;
     }
 
+    private function buildCapacityRecommendations(
+        array $cloudProducts,
+        array $salesByProduct,
+        array $pendingCloudSignals,
+        array $capacityDataGaps
+    ): array {
+        if ($capacityDataGaps !== []) {
+            return [[
+                'recommendation_type' => 'capacity',
+                'confidence' => 'low',
+                'reason' => 'Chưa thể phân tích tồn kho/capacity vì dữ liệu bắt buộc chưa sẵn sàng: ' . implode(', ', $capacityDataGaps) . '.',
+                'next_action' => 'Cập nhật đầy đủ các cột này rồi mới chạy cảnh báo nhập hàng/capacity tự động.',
+                'notes' => [
+                    'Không có dữ liệu `product_type/stock_qty/capacity_*` nên Meow không thể kết luận còn hàng hay sắp full slot.',
+                ],
+            ]];
+        }
+
+        $pendingByProduct = [];
+        foreach ($pendingCloudSignals as $row) {
+            $pendingByProduct[(int) ($row['product_id'] ?? 0)] = $row;
+        }
+
+        $candidates = [];
+        foreach ($cloudProducts as $product) {
+            $productId = (int) ($product['id'] ?? 0);
+            if ($productId <= 0) {
+                continue;
+            }
+
+            $sales = $salesByProduct[$productId] ?? ['order_count' => 0, 'sold_qty' => 0];
+            $pending = $pendingByProduct[$productId] ?? ['pending_orders' => 0];
+            $productType = strtolower(trim((string) ($product['product_type'] ?? 'service')));
+            $stockQty = (int) ($product['stock_qty'] ?? 0);
+            $reorderPoint = (int) ($product['reorder_point'] ?? 0);
+            $capacityLimit = (int) ($product['capacity_limit'] ?? 0);
+            $capacityUsed = (int) ($product['capacity_used'] ?? 0);
+            $leadTimeDays = (int) ($product['lead_time_days'] ?? 0);
+
+            $score = 0;
+            $confidence = 'medium';
+            $reasonParts = [];
+            $nextAction = '';
+
+            if (in_array($productType, ['digital_code', 'wallet'], true)) {
+                if ($stockQty <= 0) {
+                    $score += 100;
+                    $confidence = 'high';
+                    $reasonParts[] = 'stock_qty đã về 0';
+                    $nextAction = 'Ưu tiên nhập thêm mã/quỹ cho `' . (string) ($product['name'] ?? 'N/A') . '` trước khi chạy thêm campaign.';
+                } elseif ($reorderPoint > 0 && $stockQty <= $reorderPoint) {
+                    $score += 85;
+                    $reasonParts[] = 'stock_qty đang chạm ngưỡng reorder_point';
+                    $nextAction = 'Đặt lệnh bổ sung nguồn hàng trong ' . max($leadTimeDays, 1) . ' ngày tới để tránh hụt mã.';
+                } elseif ((int) ($pending['pending_orders'] ?? 0) >= 3) {
+                    $score += 60;
+                    $reasonParts[] = 'đơn pending tăng trong 30 ngày gần đây';
+                    $nextAction = 'Theo dõi tốc độ trừ kho theo ngày và chuẩn bị batch nhập nhỏ để tránh thiếu hàng đột ngột.';
+                }
+            } elseif ($productType === 'capacity') {
+                if ($capacityLimit > 0) {
+                    $ratio = (int) round(($capacityUsed / max($capacityLimit, 1)) * 100);
+                    if ($ratio >= 90) {
+                        $score += 95;
+                        $confidence = 'high';
+                        $reasonParts[] = 'capacity_used đã đạt ' . $ratio . '%';
+                        $nextAction = 'Ưu tiên mở thêm slot/cụm tài nguyên cho `' . (string) ($product['name'] ?? 'N/A') . '` trước khi nhận thêm đơn mới.';
+                    } elseif ($ratio >= 75) {
+                        $score += 75;
+                        $reasonParts[] = 'capacity_used đang ở ' . $ratio . '%';
+                        $nextAction = 'Chuẩn bị kế hoạch mở rộng capacity trong 3-7 ngày tới để tránh nghẽn đơn.';
+                    }
+                }
+
+                if ((int) ($pending['pending_orders'] ?? 0) >= 3) {
+                    $score += 20;
+                    $reasonParts[] = 'đơn pending cho nhóm này đang tăng';
+                }
+            }
+
+            if ($score <= 0) {
+                continue;
+            }
+
+            $candidates[] = [
+                'score' => $score,
+                'recommendation_type' => 'capacity',
+                'product_id' => $productId,
+                'product_name' => (string) ($product['name'] ?? ''),
+                'product_type' => $productType !== '' ? $productType : 'service',
+                'confidence' => $confidence,
+                'reason' => $this->sentenceFromParts($reasonParts),
+                'next_action' => $nextAction !== '' ? $nextAction : 'Theo dõi thêm 3-5 ngày để chốt kế hoạch nhập hàng/capacity.',
+                'metrics' => [
+                    'stock_qty' => $stockQty,
+                    'reorder_point' => $reorderPoint,
+                    'capacity_limit' => $capacityLimit,
+                    'capacity_used' => $capacityUsed,
+                    'pending_orders_30d' => (int) ($pending['pending_orders'] ?? 0),
+                    'order_count_30d' => (int) ($sales['order_count'] ?? 0),
+                ],
+                'notes' => [
+                    'Đây là gợi ý theo dữ liệu nội bộ hiện có, chưa có lead-time nhà cung cấp chuẩn hóa theo từng SKU.',
+                ],
+            ];
+        }
+
+        usort($candidates, static fn(array $a, array $b): int => (int) ($b['score'] ?? 0) <=> (int) ($a['score'] ?? 0));
+
+        if ($candidates === []) {
+            return [[
+                'recommendation_type' => 'capacity',
+                'confidence' => 'medium',
+                'reason' => 'Chưa thấy SKU cloud nào chạm ngưỡng cảnh báo tồn kho/capacity trong snapshot hiện tại.',
+                'next_action' => 'Tiếp tục theo dõi stock_qty, capacity_used và pending orders theo chu kỳ hằng ngày.',
+                'notes' => [
+                    'Khi đơn tăng đột biến, nên giảm chu kỳ kiểm tra xuống theo giờ để tránh trễ cảnh báo.',
+                ],
+            ]];
+        }
+
+        return array_values(array_map(static function (array $item): array {
+            unset($item['score']);
+            return $item;
+        }, array_slice($candidates, 0, 3)));
+    }
+
     private function buildActionQueue(array $recommendations): array
     {
         $actions = [];
 
-        foreach (['push', 'homepage', 'upsell', 'promotions', 'coupon_actions'] as $bucket) {
+        foreach (['push', 'homepage', 'upsell', 'promotions', 'coupon_actions', 'capacity'] as $bucket) {
             foreach (array_slice((array) ($recommendations[$bucket] ?? []), 0, 2) as $item) {
                 $nextAction = trim((string) ($item['next_action'] ?? ''));
                 if ($nextAction !== '') {
@@ -691,12 +894,36 @@ class AiSalesRecommendationService
         return implode(' ', $parts);
     }
 
-    private function buildDataGapNotes(array $couponSummary, array $pairSignals): array
+    private function buildDataGapNotes(
+        array $couponSummary,
+        array $pairSignals,
+        array $missingProfitFields,
+        array $missingCapacityFields,
+        array $insufficientProfitFields,
+        array $insufficientCapacityFields
+    ): array
     {
-        $notes = [
-            'Chưa có `cost_price`, `platform_fee_percent`, `payment_fee_percent`, `ads_cost_per_order`, nên không thể kết luận chắc chắn về lời/lỗ.',
-            'Chưa có `stock_qty`, `capacity_limit`, `capacity_used`, nên không thể xác nhận rủi ro capacity hoặc hết slot.',
-        ];
+        $notes = [];
+
+        if ($missingProfitFields !== []) {
+            $notes[] = 'Chưa có ' . implode(', ', array_map(static fn(string $field): string => '`' . $field . '`', $missingProfitFields))
+                . ', nên không thể kết luận chắc chắn về lời/lỗ.';
+        }
+
+        if ($insufficientProfitFields !== []) {
+            $notes[] = 'Các cột ' . implode(', ', array_map(static fn(string $field): string => '`' . $field . '`', $insufficientProfitFields))
+                . ' đã có trong schema nhưng chưa có dữ liệu vận hành đủ để tính lợi nhuận.';
+        }
+
+        if ($missingCapacityFields !== []) {
+            $notes[] = 'Chưa có ' . implode(', ', array_map(static fn(string $field): string => '`' . $field . '`', $missingCapacityFields))
+                . ', nên không thể xác nhận rủi ro capacity hoặc hết slot.';
+        }
+
+        if ($insufficientCapacityFields !== []) {
+            $notes[] = 'Các cột ' . implode(', ', array_map(static fn(string $field): string => '`' . $field . '`', $insufficientCapacityFields))
+                . ' đã có nhưng chưa được nhập đủ để cảnh báo tồn kho/capacity chính xác.';
+        }
 
         if ((int) ($couponSummary['total_coupons'] ?? 0) === 0) {
             $notes[] = 'Bảng coupon đang trống, nên chưa có lịch sử khuyến mãi để so sánh hiệu quả.';
@@ -709,6 +936,22 @@ class AiSalesRecommendationService
         $notes[] = 'Schema chưa có trường thời hạn gói hoặc chu kỳ thanh toán, nên chưa dựng được upsell theo tháng/quý/năm.';
 
         return $notes;
+    }
+
+    private function availableProductColumns(): array
+    {
+        if (is_array($this->productColumns)) {
+            return $this->productColumns;
+        }
+
+        try {
+            $stmt = $this->db->query('SHOW COLUMNS FROM products');
+            $this->productColumns = array_map(static fn(array $row): string => strtolower((string) ($row['Field'] ?? '')), $stmt->fetchAll() ?: []);
+        } catch (\Throwable $exception) {
+            $this->productColumns = [];
+        }
+
+        return $this->productColumns;
     }
 
     private function findUpsellTarget(array $sourceProduct, array $cloudProducts, array $usedTargetIds): ?array

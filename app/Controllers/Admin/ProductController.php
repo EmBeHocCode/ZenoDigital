@@ -185,12 +185,46 @@ class ProductController extends Controller
         $name = sanitize_text((string) ($_POST['name'] ?? ''), 180);
         $categoryId = validate_int_range($_POST['category_id'] ?? null, 1, 9999999, 0);
         $price = validate_float_range($_POST['price'] ?? null, 1000, 1000000000, 0);
-
+        $errors = [];
         $status = validate_enum((string) ($_POST['status'] ?? ''), ['active', 'inactive'], 'active');
         $stockStatus = validate_enum((string) ($_POST['stock_status'] ?? ''), ['in_stock', 'out_of_stock'], 'in_stock');
+        $productType = validate_enum((string) ($_POST['product_type'] ?? ''), ['service', 'digital_code', 'wallet', 'capacity'], 'service');
+        $stockQty = $this->parseNullableInt((string) ($_POST['stock_qty'] ?? ''), 0, 100000000, 'Tồn kho (stock_qty)', $errors);
+        $reorderPoint = $this->parseNullableInt((string) ($_POST['reorder_point'] ?? ''), 0, 100000000, 'Ngưỡng nhập lại (reorder_point)', $errors);
+        $leadTimeDays = $this->parseNullableInt((string) ($_POST['lead_time_days'] ?? ''), 0, 3650, 'Lead time (ngày)', $errors);
+        $capacityLimit = $this->parseNullableInt((string) ($_POST['capacity_limit'] ?? ''), 0, 100000000, 'Giới hạn capacity', $errors);
+        $capacityUsed = $this->parseNullableInt((string) ($_POST['capacity_used'] ?? ''), 0, 100000000, 'Capacity đã dùng', $errors);
+        $costPrice = $this->parseNullableFloat((string) ($_POST['cost_price'] ?? ''), 0, 1000000000, 'Giá vốn (cost_price)', $errors);
+        $minMarginPercent = $this->parseNullableFloat((string) ($_POST['min_margin_percent'] ?? ''), 0, 100, 'Biên lợi nhuận tối thiểu (%)', $errors);
+        $platformFeePercent = $this->parseNullableFloat((string) ($_POST['platform_fee_percent'] ?? ''), 0, 100, 'Phí nền tảng (%)', $errors);
+        $paymentFeePercent = $this->parseNullableFloat((string) ($_POST['payment_fee_percent'] ?? ''), 0, 100, 'Phí thanh toán (%)', $errors);
+        $adsCostPerOrder = $this->parseNullableFloat((string) ($_POST['ads_cost_per_order'] ?? ''), 0, 1000000000, 'Chi phí ads/đơn', $errors);
+        $deliveryCost = $this->parseNullableFloat((string) ($_POST['delivery_cost'] ?? ''), 0, 1000000000, 'Chi phí giao hàng', $errors);
+        $supplierName = sanitize_text((string) ($_POST['supplier_name'] ?? ''), 160);
+
+        if ($reorderPoint !== null && $stockQty !== null && $reorderPoint > $stockQty) {
+            $errors[] = 'Ngưỡng nhập lại không được lớn hơn tồn kho hiện tại.';
+        }
+
+        if ($capacityUsed !== null && $capacityLimit !== null && $capacityUsed > $capacityLimit) {
+            $errors[] = 'Capacity đã dùng không được lớn hơn giới hạn capacity.';
+        }
+
+        if ($productType === 'capacity' && $capacityLimit === null) {
+            $errors[] = 'Sản phẩm loại capacity cần nhập `capacity_limit`.';
+        }
+
+        if (in_array($productType, ['digital_code', 'wallet'], true) && $stockQty === null) {
+            $errors[] = 'Sản phẩm loại digital_code/wallet cần nhập `stock_qty`.';
+        }
 
         if ($name === '' || $categoryId <= 0 || $price <= 0) {
             flash('danger', 'Vui lòng nhập đầy đủ thông tin bắt buộc của sản phẩm.');
+            return null;
+        }
+
+        if ($errors !== []) {
+            flash('danger', implode(' ', array_values(array_unique($errors))));
             return null;
         }
 
@@ -199,6 +233,19 @@ class ProductController extends Controller
             'name' => $name,
             'slug' => $this->slugify($name . '-' . ($id ?? time())),
             'price' => $price,
+            'product_type' => $productType,
+            'stock_qty' => $stockQty,
+            'reorder_point' => $reorderPoint,
+            'supplier_name' => $supplierName !== '' ? $supplierName : null,
+            'lead_time_days' => $leadTimeDays,
+            'cost_price' => $costPrice,
+            'min_margin_percent' => $minMarginPercent,
+            'platform_fee_percent' => $platformFeePercent,
+            'payment_fee_percent' => $paymentFeePercent,
+            'ads_cost_per_order' => $adsCostPerOrder,
+            'delivery_cost' => $deliveryCost,
+            'capacity_limit' => $capacityLimit,
+            'capacity_used' => $capacityUsed,
             'short_description' => sanitize_text((string) ($_POST['short_description'] ?? ''), 300),
             'description' => sanitize_text((string) ($_POST['description'] ?? ''), 5000),
             'specs' => sanitize_text((string) ($_POST['specs'] ?? ''), 5000),
@@ -206,6 +253,48 @@ class ProductController extends Controller
             'stock_status' => $stockStatus,
             'status' => $status,
         ];
+    }
+
+    private function parseNullableInt(string $rawValue, int $min, int $max, string $label, array &$errors): ?int
+    {
+        $rawValue = trim($rawValue);
+        if ($rawValue === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d+$/', $rawValue) !== 1) {
+            $errors[] = $label . ' phải là số nguyên không âm.';
+            return null;
+        }
+
+        $value = (int) $rawValue;
+        if ($value < $min || $value > $max) {
+            $errors[] = $label . ' phải nằm trong khoảng ' . $min . ' - ' . $max . '.';
+            return null;
+        }
+
+        return $value;
+    }
+
+    private function parseNullableFloat(string $rawValue, float $min, float $max, string $label, array &$errors): ?float
+    {
+        $rawValue = trim(str_replace(',', '.', $rawValue));
+        if ($rawValue === '') {
+            return null;
+        }
+
+        if (!is_numeric($rawValue)) {
+            $errors[] = $label . ' phải là số hợp lệ.';
+            return null;
+        }
+
+        $value = (float) $rawValue;
+        if ($value < $min || $value > $max) {
+            $errors[] = $label . ' phải nằm trong khoảng ' . $min . ' - ' . $max . '.';
+            return null;
+        }
+
+        return $value;
     }
 
     private function uploadMultiple(string $field): array

@@ -70,6 +70,19 @@ CREATE TABLE products (
     name VARCHAR(180) NOT NULL,
     slug VARCHAR(220) NOT NULL UNIQUE,
     price DECIMAL(15,2) NOT NULL DEFAULT 0,
+    product_type ENUM('service','digital_code','wallet','capacity') NULL,
+    stock_qty INT NULL,
+    reorder_point INT NULL,
+    supplier_name VARCHAR(160) NULL,
+    lead_time_days INT NULL,
+    cost_price DECIMAL(15,2) NULL,
+    min_margin_percent DECIMAL(6,2) NULL,
+    platform_fee_percent DECIMAL(6,2) NULL,
+    payment_fee_percent DECIMAL(6,2) NULL,
+    ads_cost_per_order DECIMAL(15,2) NULL,
+    delivery_cost DECIMAL(15,2) NULL,
+    capacity_limit INT NULL,
+    capacity_used INT NULL,
     short_description VARCHAR(255) NULL,
     description TEXT NULL,
     specs TEXT NULL,
@@ -293,6 +306,62 @@ VALUES
 (2, 'Game Server Minecraft', 'game-server-minecraft', 259000, 'Server tối ưu cho Minecraft', 'Hỗ trợ cài plugin, backup tự động.', 'RAM: 8GB\nStorage: 120GB SSD\nDDoS Protection', NULL, 'in_stock', 'active', NOW(), NOW()),
 (4, 'Steam Wallet 500K', 'steam-wallet-500k', 500000, 'Nạp Wallet Steam mệnh giá 500K', 'Kích hoạt nhanh trong vài phút.', 'Delivery: Instant\nRegion: VN', NULL, 'in_stock', 'active', NOW(), NOW()),
 (5, 'Thẻ game đa nền tảng 200K', 'the-game-da-nen-tang-200k', 200000, 'Mã thẻ game tiện lợi', 'Hỗ trợ nhiều nhà phát hành game.', 'Card Type: Digital Code', NULL, 'in_stock', 'active', NOW(), NOW());
+
+-- Demo-only seed for phase 6/7 signals. Real production values must be maintained from admin backoffice.
+UPDATE products p
+INNER JOIN categories c ON c.id = p.category_id
+SET
+    p.product_type = 'capacity',
+    p.capacity_limit = CASE
+        WHEN p.price >= 700000 THEN 40
+        WHEN p.price >= 500000 THEN 55
+        ELSE 70
+    END,
+    p.capacity_used = CASE
+        WHEN p.price >= 700000 THEN 30
+        WHEN p.price >= 500000 THEN 38
+        ELSE 45
+    END,
+    p.lead_time_days = 7,
+    p.cost_price = ROUND(p.price * 0.72, 2),
+    p.min_margin_percent = 12.00,
+    p.platform_fee_percent = 2.50,
+    p.payment_fee_percent = 1.80,
+    p.ads_cost_per_order = 12000.00,
+    p.delivery_cost = 0.00
+WHERE c.slug IN ('vps-cloud-server', 'server-game');
+
+UPDATE products p
+INNER JOIN categories c ON c.id = p.category_id
+SET
+    p.product_type = 'wallet',
+    p.stock_qty = 80,
+    p.reorder_point = 25,
+    p.supplier_name = 'Steam wallet provider',
+    p.lead_time_days = 1,
+    p.cost_price = ROUND(p.price * 0.94, 2),
+    p.min_margin_percent = 4.00,
+    p.platform_fee_percent = 1.50,
+    p.payment_fee_percent = 1.20,
+    p.ads_cost_per_order = 5000.00,
+    p.delivery_cost = 0.00
+WHERE c.slug = 'wallet-steam';
+
+UPDATE products p
+INNER JOIN categories c ON c.id = p.category_id
+SET
+    p.product_type = 'digital_code',
+    p.stock_qty = 140,
+    p.reorder_point = 40,
+    p.supplier_name = 'Game card distributor',
+    p.lead_time_days = 2,
+    p.cost_price = ROUND(p.price * 0.91, 2),
+    p.min_margin_percent = 5.00,
+    p.platform_fee_percent = 1.70,
+    p.payment_fee_percent = 1.20,
+    p.ads_cost_per_order = 4000.00,
+    p.delivery_cost = 0.00
+WHERE c.slug = 'the-game-the-nap';
 
 INSERT INTO orders (user_id, order_code, total_amount, status, created_at, updated_at)
 VALUES
