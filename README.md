@@ -118,6 +118,58 @@ Nguyên tắc cốt lõi:
 - `AiSalesRecommendationService`: recommendation (push/upsell/promotion/capacity)
 - `AdminAiSessionService`, `AdminAiProgressService`: session/progress tracking
 
+## 3.5 Cơ chế AI runtime thực tế
+
+ZenoxDigital **không tự chạy model AI bên trong repo PHP này**.  
+Repo này đóng vai trò:
+
+1. Render UI cho khách/admin
+2. Xây context và guardrail ở backend PHP
+3. Gọi sang một **AI bridge/service bên ngoài** qua HTTP JSON
+4. Nhận kết quả, chuẩn hóa response rồi trả về widget/panel
+
+Luồng thực tế:
+
+1. Người dùng chat ở widget khách hoặc Meow Copilot admin
+2. JS gọi route PHP:
+   - `POST /ai/chat/customer`
+   - `POST /admin/ai/chat`
+3. Controller build context phù hợp actor/quyền hiện tại
+4. `AiBridgeService` gửi payload sang `AI_BRIDGE_URL`
+5. AI bridge trả lời
+6. ZenoxDigital đóng gói kết quả và render lại trên giao diện
+
+Cấu hình local hiện tại của repo đang hướng tới bridge:
+
+```env
+AI_PROVIDER=zia-bot-bridge
+AI_BRIDGE_URL=http://127.0.0.1:10001/api/web-chat
+```
+
+Trong môi trường dev hiện tại, bridge này thường được cung cấp bởi service companion **`Bot-Local`** chạy riêng ở ngoài repo ZenoxDigital.
+
+## 3.6 Fallback mode và cách hiểu đúng
+
+Để frontend và flow end-to-end vẫn test được khi bridge ngoài chưa bật, `AiBridgeService` có cơ chế fallback an toàn.
+
+Nếu:
+
+- AI bị tắt
+- `AI_BRIDGE_URL` chưa cấu hình
+- bridge đang down / timeout / từ chối kết nối
+
+thì hệ thống có thể trả về `local-fallback` nếu:
+
+```env
+AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
+```
+
+Khi đó:
+
+- Widget/panel **vẫn hoạt động**
+- Nhưng câu trả lời chỉ là fallback nội bộ, không phải AI bridge thật
+- Đây là chế độ để test UI, route, session, rate-limit và guardrail, không phải production AI thật
+
 ---
 
 ## 4. Chi tiết phase AI (roadmap + trạng thái)
@@ -186,6 +238,28 @@ Ví dụ câu hỏi:
 - "Coupon hiện tại thế nào?"
 - "Có cảnh báo nhập hàng/capacity nào không?"
 
+## 5.3 Cách kiểm tra đang dùng AI thật hay fallback
+
+Sau khi chat, response JSON của hệ thống sẽ có metadata để phân biệt:
+
+**Nếu đang chạy AI bridge thật**:
+
+- `provider=zia-bot-bridge` (hoặc tên provider do bridge trả về)
+- `is_fallback=false`
+- `mode=real_bridge`
+
+**Nếu đang fallback**:
+
+- `provider=local-fallback`
+- `is_fallback=true`
+- `mode=fallback`
+
+Điều này giúp debug nhanh xem vấn đề đang nằm ở:
+
+- UI/frontend
+- route/controller PHP
+- hay service bridge ngoài chưa chạy
+
 ---
 
 ## 6. Cấu hình và chạy local
@@ -217,13 +291,50 @@ Trong `.env` (ví dụ):
 
 ```env
 AI_ENABLED=true
-AI_PROVIDER=bridge
-AI_BRIDGE_URL=http://your-ai-bridge/api/web-chat
+AI_PROVIDER=zia-bot-bridge
+AI_BRIDGE_URL=http://127.0.0.1:10001/api/web-chat
 AI_BRIDGE_KEY=your-secret
 AI_CHAT_TIMEOUT=20
 AI_BRIDGE_RETRIES=1
 AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
 ```
+
+## 6.4 Chạy AI bridge thật ở local
+
+Nếu bạn muốn chatbot trên web dùng **AI thật**, ngoài Apache/MySQL cho ZenoxDigital, bạn còn phải chạy service bridge bên ngoài.
+
+Với setup dev hiện tại, service đó là companion repo `Bot-Local` chạy ở port `10001`.
+
+Ví dụ:
+
+```bash
+cd E:\ZALO-BotChat
+bun run dev:bot
+```
+
+Hoặc:
+
+```bash
+cd E:\ZALO-BotChat
+bun run --cwd apps/bot dev
+```
+
+Lưu ý:
+
+- Repo bot này **không nằm trong** repo ZenoxDigital
+- Trong máy dev hiện tại, repo `Bot-Local` đang được đặt tại `E:\ZALO-BotChat`
+- Nó cần được chạy riêng
+- Nếu bridge chưa chạy, ZenoxDigital vẫn có thể trả `local-fallback` để test UI
+- Nếu bridge chạy đúng, chatbot web sẽ chuyển sang `real_bridge`
+
+## 6.5 Checklist chạy AI end-to-end
+
+1. Bật Apache + MySQL cho ZenoxDigital
+2. Kiểm tra `.env` của ZenoxDigital có `AI_BRIDGE_URL` đúng
+3. Chạy AI bridge/service ngoài ở port phù hợp
+4. Mở `http://localhost/ZenoxDigital/public`
+5. Chat thử ở widget khách hoặc admin panel
+6. Kiểm tra metadata response để xác nhận `real_bridge` hay `fallback`
 
 ---
 
@@ -385,6 +496,55 @@ Core abilities:
 - `AdminAiSessionService`
 - `AdminAiProgressService`
 
+## 3.5 Real AI runtime mechanism
+
+ZenoxDigital does **not** host the actual AI model inside this PHP repository.  
+This repository is responsible for:
+
+1. Rendering customer/admin UI
+2. Building scoped backend context and guardrails
+3. Calling an **external AI bridge/service** over HTTP JSON
+4. Normalizing the response back into the widget/copilot UI
+
+Actual runtime flow:
+
+1. A user sends a message from the storefront widget or admin copilot
+2. JavaScript calls the PHP route:
+   - `POST /ai/chat/customer`
+   - `POST /admin/ai/chat`
+3. The controller builds actor-aware context
+4. `AiBridgeService` sends the request to `AI_BRIDGE_URL`
+5. The external bridge returns an answer
+6. ZenoxDigital wraps the result and renders it in the UI
+
+The current local setup is wired like this:
+
+```env
+AI_PROVIDER=zia-bot-bridge
+AI_BRIDGE_URL=http://127.0.0.1:10001/api/web-chat
+```
+
+In the current development workflow, that bridge is typically provided by a separate companion service named **`Bot-Local`**.
+
+## 3.6 Fallback mode
+
+`AiBridgeService` can safely fall back when the external bridge is unavailable.
+
+Typical fallback cases:
+
+- AI is disabled
+- `AI_BRIDGE_URL` is missing
+- the bridge is down / timing out / refusing connections
+
+If this is enabled:
+
+```env
+AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
+```
+
+then the UI still works, but the response comes from `local-fallback`, not from the real bridge.  
+This is useful for testing UI/routes/session flow, but it should not be confused with the production AI path.
+
 ---
 
 ## 4. Detailed AI phase status
@@ -429,6 +589,28 @@ If fields are missing or operationally empty, AI will warn/refuse instead of gue
 3. Ask operational prompts (pending orders, top products, coupons, capacity).
 4. For mutations, use preview then confirmation flow.
 
+## 5.3 How to verify real AI vs fallback
+
+Each AI response includes metadata you can inspect:
+
+**Real bridge mode**:
+
+- `provider=zia-bot-bridge` (or the provider name returned by the bridge)
+- `is_fallback=false`
+- `mode=real_bridge`
+
+**Fallback mode**:
+
+- `provider=local-fallback`
+- `is_fallback=true`
+- `mode=fallback`
+
+This helps determine whether an issue is in:
+
+- the frontend UI
+- the PHP routes/controllers
+- or the external bridge service
+
 ---
 
 ## 6. Local setup
@@ -453,6 +635,57 @@ cd ZenoDigital
    - `database/20260422_add_phase67_product_columns.sql`
 5. Open:
    - `http://localhost/ZenoxDigital/public`
+
+## 6.1 AI bridge configuration
+
+In `.env`:
+
+```env
+AI_ENABLED=true
+AI_PROVIDER=zia-bot-bridge
+AI_BRIDGE_URL=http://127.0.0.1:10001/api/web-chat
+AI_BRIDGE_KEY=your-secret
+AI_CHAT_TIMEOUT=20
+AI_BRIDGE_RETRIES=1
+AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
+```
+
+## 6.2 Running the real AI bridge locally
+
+If you want the website chatbot/copilot to use the **real AI path**, you must run the external bridge service in addition to Apache/MySQL.
+
+In the current development setup, that service is the companion `Bot-Local` repo listening on port `10001`.
+
+Example:
+
+```bash
+cd E:\ZALO-BotChat
+bun run dev:bot
+```
+
+Or:
+
+```bash
+cd E:\ZALO-BotChat
+bun run --cwd apps/bot dev
+```
+
+Notes:
+
+- This bot service is **not part of** the ZenoxDigital PHP repo
+- In the current dev machine, the `Bot-Local` repo is located at `E:\ZALO-BotChat`
+- It must run separately
+- If it is offline, ZenoxDigital can still answer with `local-fallback`
+- If it is online, responses should switch to `real_bridge`
+
+## 6.3 End-to-end AI checklist
+
+1. Start Apache + MySQL for ZenoxDigital
+2. Verify `AI_BRIDGE_URL` in ZenoxDigital `.env`
+3. Start the external bridge on the expected port
+4. Open `http://localhost/ZenoxDigital/public`
+5. Test the customer widget or admin copilot
+6. Inspect response metadata to confirm `real_bridge` or `fallback`
 
 ---
 
