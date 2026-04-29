@@ -1,4 +1,4 @@
-# ZenoDigital
+# ZenoxDigital
 
 [Tiếng Việt](#tiếng-việt) | [English](#english)
 
@@ -8,7 +8,7 @@
 
 ## 1. Tổng quan dự án
 
-**ZenoDigital** là một webshop dịch vụ số theo định hướng cloud-first, xây dựng trên:
+**ZenoxDigital** là một webshop dịch vụ số theo định hướng cloud-first, xây dựng trên:
 
 - PHP MVC (custom)
 - PDO (MySQL/MariaDB)
