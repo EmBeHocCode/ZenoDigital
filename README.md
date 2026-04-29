@@ -8,7 +8,7 @@
 
 ## 1. Tổng quan dự án
 
-**ZenoxDigital** là một webshop dịch vụ số theo định hướng cloud-first, xây dựng trên:
+**ZenoDigital** là một webshop dịch vụ số theo định hướng cloud-first, xây dựng trên:
 
 - PHP MVC (custom)
 - PDO (MySQL/MariaDB)
