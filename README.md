@@ -1,4 +1,4 @@
-# ZenoxDigital
+# ZenoDigital
 
 [Tiếng Việt](#tiếng-việt) | [English](#english)
 
