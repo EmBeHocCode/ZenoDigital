@@ -325,18 +325,37 @@ function is_https_request(): bool
     return $forwardedProto === 'https';
 }
 
+function app_base_path(): string
+{
+    $configuredUrl = trim((string) config('app.url', ''));
+    $configuredPath = trim((string) parse_url($configuredUrl, PHP_URL_PATH), '/');
+    if ($configuredPath !== '') {
+        return '/' . $configuredPath;
+    }
+
+    $scriptDir = dirname((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $normalized = trim(str_replace('\\', '/', $scriptDir), '/.');
+
+    return $normalized !== '' ? '/' . $normalized : '';
+}
+
 function base_url(string $path = ''): string
 {
-    $url = rtrim(config('app.url', ''), '/');
+    $configuredUrl = trim((string) config('app.url', ''));
+    $url = rtrim($configuredUrl, '/');
     $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $scheme = is_https_request() ? 'https' : 'http';
 
-    if ($host !== '' && (
-        $url === ''
-        || str_contains(strtolower($url), 'localhost')
-        || str_contains(strtolower($url), '127.0.0.1')
-    )) {
-        $scheme = is_https_request() ? 'https' : 'http';
-        $url = $scheme . '://' . $host;
+    if ($host !== '') {
+        $configuredHost = strtolower((string) parse_url($configuredUrl, PHP_URL_HOST));
+
+        if ($configuredHost === '' || in_array($configuredHost, ['localhost', '127.0.0.1'], true)) {
+            $url = $scheme . '://' . $host . app_base_path();
+        }
+    }
+
+    if ($url === '') {
+        $url = $scheme . '://' . ($host !== '' ? $host : 'localhost') . app_base_path();
     }
 
     return $path ? $url . '/' . ltrim($path, '/') : $url;

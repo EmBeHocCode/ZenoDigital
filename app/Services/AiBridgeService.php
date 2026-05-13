@@ -38,10 +38,12 @@ class AiBridgeService
             return $this->localFallbackResponse($channel, $sessionId, $trimmedMessage, $context, $meta, 'AI bridge chưa được cấu hình, đang dùng local fallback để test end-to-end.');
         }
 
+        $bridgePrompt = $this->buildBridgePrompt($channel, $trimmedMessage, $context, $meta);
         $payload = [
             'sessionId' => $sessionId,
-            'message' => $this->buildBridgePrompt($channel, $trimmedMessage, $context, $meta),
+            'message' => $bridgePrompt,
             'reset' => !empty($meta['reset']),
+            'fast' => $channel === 'admin' || strlen($bridgePrompt) > 5000,
         ];
 
         $attempts = max(1, (int) ($this->aiConfig['retry_times'] ?? 1) + 1);
