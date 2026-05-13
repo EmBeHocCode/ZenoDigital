@@ -328,6 +328,17 @@ function is_https_request(): bool
 function base_url(string $path = ''): string
 {
     $url = rtrim(config('app.url', ''), '/');
+    $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+
+    if ($host !== '' && (
+        $url === ''
+        || str_contains(strtolower($url), 'localhost')
+        || str_contains(strtolower($url), '127.0.0.1')
+    )) {
+        $scheme = is_https_request() ? 'https' : 'http';
+        $url = $scheme . '://' . $host;
+    }
+
     return $path ? $url . '/' . ltrim($path, '/') : $url;
 }
 
