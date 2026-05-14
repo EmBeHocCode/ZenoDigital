@@ -59,11 +59,11 @@ class ProductController extends Controller
             'category_id' => sanitize_text((string) ($_GET['category_id'] ?? ''), 10),
             'min_price' => sanitize_text((string) ($_GET['min_price'] ?? ''), 12),
             'max_price' => sanitize_text((string) ($_GET['max_price'] ?? ''), 12),
-            'cpu' => validate_enum((string) ($_GET['cpu'] ?? ''), ['', '2', '4', '6'], ''),
-            'ram' => validate_enum((string) ($_GET['ram'] ?? ''), ['', '4GB', '8GB', '16GB'], ''),
+            'cpu' => validate_enum((string) ($_GET['cpu'] ?? ''), ['', '1', '2', '4', '6'], ''),
+            'ram' => validate_enum((string) ($_GET['ram'] ?? ''), ['', '1GB', '2GB', '4GB', '8GB', '16GB'], ''),
             'disk' => validate_enum((string) ($_GET['disk'] ?? ''), ['', 'ssd', 'nvme'], ''),
             'location' => validate_enum((string) ($_GET['location'] ?? ''), ['', 'VN', 'SG', 'US'], ''),
-            'plan_type' => validate_enum((string) ($_GET['plan_type'] ?? ''), ['', 'Starter', 'Business', 'Enterprise'], ''),
+            'plan_type' => validate_enum((string) ($_GET['plan_type'] ?? ''), ['', 'Student', 'Starter', 'Business', 'Enterprise'], ''),
             'sort' => validate_enum((string) ($_GET['sort'] ?? 'latest'), ['latest', 'price_asc', 'price_desc', 'popular'], 'latest'),
         ];
 

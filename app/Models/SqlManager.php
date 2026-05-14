@@ -127,6 +127,9 @@ class SqlManager extends Model
             'overview' => $this->getTableOverview($table, $total),
             'columns' => $columns,
             'primary_keys' => $primaryKeys,
+            'indexes' => $this->getTableIndexes($table),
+            'foreign_keys' => $this->getTableForeignKeys($table),
+            'triggers' => $this->getTableTriggers($table),
             'row_identity_keys' => $rowIdentity['columns'],
             'row_identity_source' => $rowIdentity['source'],
             'row_actions' => [
@@ -187,6 +190,106 @@ class SqlManager extends Model
             'row_count' => count($rows),
             'truncated' => $truncated,
             'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+        ];
+    }
+
+    public function exportSqlDump(array $options = []): array
+    {
+        $scope = strtolower(trim((string) ($options['scope'] ?? 'database')));
+        $table = trim((string) ($options['table'] ?? ''));
+        $includeSchema = array_key_exists('include_schema', $options) ? (bool) $options['include_schema'] : true;
+        $includeData = array_key_exists('include_data', $options) ? (bool) $options['include_data'] : true;
+        $addDrop = array_key_exists('add_drop', $options) ? (bool) $options['add_drop'] : true;
+        $insertMode = strtoupper(trim((string) ($options['insert_mode'] ?? 'INSERT')));
+        $insertMode = $insertMode === 'REPLACE' ? 'REPLACE INTO' : 'INSERT INTO';
+
+        if (!$includeSchema && !$includeData) {
+            throw new \InvalidArgumentException('Export SQL can include schema, data, or both.');
+        }
+
+        if ($scope === 'table') {
+            $this->assertValidTable($table);
+            $tables = [$table];
+        } else {
+            $tables = array_values(array_map(
+                static fn(array $meta): string => (string) ($meta['name'] ?? ''),
+                $this->listTables()
+            ));
+            $tables = array_values(array_filter($tables, static fn(string $name): bool => $name !== ''));
+        }
+
+        if ($tables === []) {
+            throw new \RuntimeException('Database does not have any table to export.');
+        }
+
+        $tables = $this->sortTablesByForeignKeys($tables);
+        $database = $this->databaseName();
+        $lines = [];
+        $totalRows = 0;
+
+        $lines[] = '-- ZenoxDigital SQL dump';
+        $lines[] = '-- Database: `' . str_replace('`', '``', $database) . '`';
+        $lines[] = '-- Generated at: ' . date('Y-m-d H:i:s');
+        $lines[] = '-- Compatible with phpMyAdmin import';
+        $lines[] = '';
+        $lines[] = 'SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";';
+        $lines[] = 'START TRANSACTION;';
+        $lines[] = 'SET time_zone = "+00:00";';
+        $lines[] = 'SET NAMES utf8mb4;';
+        $lines[] = 'SET FOREIGN_KEY_CHECKS = 0;';
+        $lines[] = '';
+
+        if ($includeSchema && $addDrop) {
+            $lines[] = '-- Drop existing tables first to avoid phpMyAdmin #1050 errors.';
+            foreach (array_reverse($tables) as $dropTable) {
+                $lines[] = 'DROP TABLE IF EXISTS ' . $this->quoteIdentifier($dropTable) . ';';
+            }
+            $lines[] = '';
+        }
+
+        if ($includeSchema) {
+            foreach ($tables as $createTable) {
+                $lines[] = '--';
+                $lines[] = '-- Table structure for table ' . $this->quoteIdentifier($createTable);
+                $lines[] = '--';
+                $lines[] = '';
+                $lines[] = $this->createTableSql($createTable) . ';';
+                $lines[] = '';
+            }
+        }
+
+        if ($includeData) {
+            foreach ($tables as $dataTable) {
+                $lines[] = '--';
+                $lines[] = '-- Data for table ' . $this->quoteIdentifier($dataTable);
+                $lines[] = '--';
+                $lines[] = '';
+
+                $dump = $this->dumpTableDataSql($dataTable, $insertMode);
+                $totalRows += $dump['row_count'];
+                if ($dump['sql'] !== '') {
+                    $lines[] = $dump['sql'];
+                } else {
+                    $lines[] = '-- No rows.';
+                }
+                $lines[] = '';
+            }
+        }
+
+        $lines[] = 'SET FOREIGN_KEY_CHECKS = 1;';
+        $lines[] = 'COMMIT;';
+        $lines[] = '';
+
+        return [
+            'database' => $database,
+            'tables' => $tables,
+            'table_count' => count($tables),
+            'row_count' => $totalRows,
+            'include_schema' => $includeSchema,
+            'include_data' => $includeData,
+            'add_drop' => $addDrop,
+            'insert_mode' => $insertMode,
+            'sql' => implode("\n", $lines),
         ];
     }
 
@@ -554,6 +657,260 @@ class SqlManager extends Model
         return $map;
     }
 
+    private function getTableIndexes(string $table): array
+    {
+        $this->assertValidTable($table);
+
+        $stmt = $this->db->prepare('SELECT
+                INDEX_NAME AS index_name,
+                COLUMN_NAME AS column_name,
+                SEQ_IN_INDEX AS seq_in_index,
+                NON_UNIQUE AS non_unique,
+                INDEX_TYPE AS index_type,
+                COLLATION AS collation,
+                CARDINALITY AS cardinality
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = :table
+            ORDER BY INDEX_NAME = "PRIMARY" DESC, INDEX_NAME ASC, SEQ_IN_INDEX ASC');
+        $stmt->execute(['table' => $table]);
+
+        $indexes = [];
+        foreach ($stmt->fetchAll() ?: [] as $row) {
+            $name = (string) ($row['index_name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+
+            if (!isset($indexes[$name])) {
+                $indexes[$name] = [
+                    'name' => $name,
+                    'columns' => [],
+                    'is_unique' => ((int) ($row['non_unique'] ?? 1)) === 0,
+                    'type' => (string) ($row['index_type'] ?? ''),
+                    'cardinality' => $row['cardinality'] ?? null,
+                ];
+            }
+
+            $indexes[$name]['columns'][] = [
+                'name' => (string) ($row['column_name'] ?? ''),
+                'sequence' => (int) ($row['seq_in_index'] ?? 0),
+                'collation' => (string) ($row['collation'] ?? ''),
+            ];
+        }
+
+        return array_values($indexes);
+    }
+
+    private function getTableForeignKeys(string $table): array
+    {
+        $this->assertValidTable($table);
+
+        $stmt = $this->db->prepare('SELECT
+                kcu.CONSTRAINT_NAME AS constraint_name,
+                kcu.COLUMN_NAME AS column_name,
+                kcu.REFERENCED_TABLE_NAME AS referenced_table,
+                kcu.REFERENCED_COLUMN_NAME AS referenced_column,
+                rc.UPDATE_RULE AS update_rule,
+                rc.DELETE_RULE AS delete_rule
+            FROM information_schema.KEY_COLUMN_USAGE kcu
+            LEFT JOIN information_schema.REFERENTIAL_CONSTRAINTS rc
+              ON rc.CONSTRAINT_SCHEMA = kcu.CONSTRAINT_SCHEMA
+             AND rc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+             AND rc.TABLE_NAME = kcu.TABLE_NAME
+            WHERE kcu.TABLE_SCHEMA = DATABASE()
+              AND kcu.TABLE_NAME = :table
+              AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+            ORDER BY kcu.CONSTRAINT_NAME ASC, kcu.ORDINAL_POSITION ASC');
+        $stmt->execute(['table' => $table]);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    private function getTableTriggers(string $table): array
+    {
+        $this->assertValidTable($table);
+
+        $stmt = $this->db->prepare('SELECT
+                TRIGGER_NAME AS name,
+                EVENT_MANIPULATION AS event,
+                ACTION_TIMING AS timing,
+                ACTION_STATEMENT AS statement,
+                CREATED AS created_at
+            FROM information_schema.TRIGGERS
+            WHERE TRIGGER_SCHEMA = DATABASE()
+              AND EVENT_OBJECT_TABLE = :table
+            ORDER BY TRIGGER_NAME ASC');
+        $stmt->execute(['table' => $table]);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    private function createTableSql(string $table): string
+    {
+        $this->assertValidTable($table);
+
+        $stmt = $this->db->query('SHOW CREATE TABLE ' . $this->quoteIdentifier($table));
+        $row = $stmt->fetch() ?: [];
+        $createSql = (string) ($row['Create Table'] ?? ($row[1] ?? ''));
+
+        if ($createSql === '') {
+            throw new \RuntimeException('Cannot read CREATE TABLE statement for ' . $table . '.');
+        }
+
+        return rtrim($createSql, " \t\n\r;");
+    }
+
+    private function dumpTableDataSql(string $table, string $insertMode): array
+    {
+        $this->assertValidTable($table);
+
+        $columns = array_values(array_filter(
+            $this->getTableColumns($table),
+            fn(array $column): bool => !$this->isGeneratedColumn($column)
+        ));
+
+        if ($columns === []) {
+            return [
+                'sql' => '',
+                'row_count' => 0,
+            ];
+        }
+
+        $columnNames = array_map(static fn(array $column): string => (string) $column['name'], $columns);
+        $columnSql = implode(', ', array_map(fn(string $name): string => $this->quoteIdentifier($name), $columnNames));
+        $selectSql = 'SELECT ' . $columnSql . ' FROM ' . $this->quoteIdentifier($table);
+
+        $primaryKeys = $this->getPrimaryKeyColumns($table);
+        if ($primaryKeys !== []) {
+            $selectSql .= ' ORDER BY ' . implode(', ', array_map(fn(string $name): string => $this->quoteIdentifier($name), $primaryKeys));
+        }
+
+        $stmt = $this->db->query($selectSql);
+        $chunks = [];
+        $batchRows = [];
+        $rowCount = 0;
+        $batchSize = 80;
+
+        while (($row = $stmt->fetch()) !== false) {
+            $values = [];
+            foreach ($columns as $column) {
+                $name = (string) $column['name'];
+                $values[] = $this->sqlLiteral($row[$name] ?? null, $column);
+            }
+
+            $batchRows[] = '(' . implode(', ', $values) . ')';
+            $rowCount++;
+
+            if (count($batchRows) >= $batchSize) {
+                $chunks[] = $this->buildInsertStatement($insertMode, $table, $columnSql, $batchRows);
+                $batchRows = [];
+            }
+        }
+
+        if ($batchRows !== []) {
+            $chunks[] = $this->buildInsertStatement($insertMode, $table, $columnSql, $batchRows);
+        }
+
+        return [
+            'sql' => implode("\n", $chunks),
+            'row_count' => $rowCount,
+        ];
+    }
+
+    private function buildInsertStatement(string $insertMode, string $table, string $columnSql, array $rows): string
+    {
+        return $insertMode . ' ' . $this->quoteIdentifier($table)
+            . ' (' . $columnSql . ") VALUES\n"
+            . implode(",\n", $rows)
+            . ';';
+    }
+
+    private function sqlLiteral($value, array $columnMeta): string
+    {
+        if ($value === null) {
+            return 'NULL';
+        }
+
+        if ($this->isBinaryType((string) ($columnMeta['data_type'] ?? ''))) {
+            return "X'" . bin2hex((string) $value) . "'";
+        }
+
+        $quoted = $this->db->quote((string) $value);
+        if ($quoted !== false) {
+            return $quoted;
+        }
+
+        return "'" . str_replace(
+            ["\\", "\0", "\n", "\r", "'", "\x1a"],
+            ["\\\\", "\\0", "\\n", "\\r", "\\'", "\\Z"],
+            (string) $value
+        ) . "'";
+    }
+
+    private function sortTablesByForeignKeys(array $tables): array
+    {
+        $tables = array_values(array_unique(array_filter($tables, static fn(string $table): bool => $table !== '')));
+        if (count($tables) <= 1) {
+            return $tables;
+        }
+
+        $tableSet = array_fill_keys($tables, true);
+        $dependencies = array_fill_keys($tables, []);
+
+        $stmt = $this->db->query('SELECT
+                TABLE_NAME AS child_table,
+                REFERENCED_TABLE_NAME AS parent_table
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND REFERENCED_TABLE_SCHEMA = DATABASE()
+              AND REFERENCED_TABLE_NAME IS NOT NULL');
+
+        foreach ($stmt->fetchAll() ?: [] as $row) {
+            $child = (string) ($row['child_table'] ?? '');
+            $parent = (string) ($row['parent_table'] ?? '');
+            if ($child === '' || $parent === '' || $child === $parent || !isset($tableSet[$child], $tableSet[$parent])) {
+                continue;
+            }
+
+            $dependencies[$child][$parent] = true;
+        }
+
+        $ordered = [];
+        $visited = [];
+        $visiting = [];
+        $visit = function (string $table) use (&$visit, &$ordered, &$visited, &$visiting, $dependencies): void {
+            if (isset($visited[$table])) {
+                return;
+            }
+
+            if (isset($visiting[$table])) {
+                return;
+            }
+
+            $visiting[$table] = true;
+            foreach (array_keys($dependencies[$table] ?? []) as $parent) {
+                $visit($parent);
+            }
+            unset($visiting[$table]);
+
+            $visited[$table] = true;
+            $ordered[] = $table;
+        };
+
+        foreach ($tables as $table) {
+            $visit($table);
+        }
+
+        foreach ($tables as $table) {
+            if (!in_array($table, $ordered, true)) {
+                $ordered[] = $table;
+            }
+        }
+
+        return $ordered;
+    }
+
     private function sanitizeQuery(string $sql): string
     {
         $sql = trim($sql);
@@ -617,7 +974,7 @@ class SqlManager extends Model
 
     private function isBinaryType(string $dataType): bool
     {
-        return in_array(strtolower($dataType), ['blob', 'tinyblob', 'mediumblob', 'longblob', 'binary', 'varbinary'], true);
+        return in_array(strtolower($dataType), ['blob', 'tinyblob', 'mediumblob', 'longblob', 'binary', 'varbinary', 'bit'], true);
     }
 
     private function quoteIdentifier(string $identifier): string

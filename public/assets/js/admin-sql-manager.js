@@ -18,6 +18,14 @@ document.addEventListener('DOMContentLoaded', () => {
         queryResult: null,
         wrapText: false,
         databaseExpanded: true,
+        explorerCollapsed: window.matchMedia && window.matchMedia('(max-width: 767.98px)').matches,
+        expandedTables: {},
+        structureFocus: 'columns',
+        inlineEdit: null,
+        cellStatus: {},
+        columnWidths: {},
+        resize: null,
+        explorerWidth: Number(window.localStorage.getItem('sqlm:explorerWidth') || 286),
         cellPreview: {
             rowIndex: null,
             column: '',
@@ -43,6 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
         flash: document.getElementById('sqlmFlash'),
         databaseToggle: document.getElementById('sqlmDatabaseToggle'),
         databaseStatus: document.getElementById('sqlmDatabaseStatus'),
+        explorerToggleBtn: document.getElementById('sqlmExplorerToggleBtn'),
+        explorerSplitter: document.getElementById('sqlmExplorerSplitter'),
         explorerState: document.getElementById('sqlmExplorerState'),
         currentTable: document.getElementById('sqlmCurrentTable'),
         headTable: document.getElementById('sqlmHeadTable'),
@@ -109,6 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         query: app.getAttribute('data-query-url') || '',
         commit: app.getAttribute('data-commit-url') || '',
         import: app.getAttribute('data-import-url') || '',
+        exportSql: app.getAttribute('data-export-sql-url') || '',
         insert: app.getAttribute('data-insert-url') || '',
         update: app.getAttribute('data-update-url') || '',
         delete: app.getAttribute('data-delete-url') || '',
@@ -260,6 +271,270 @@ document.addEventListener('DOMContentLoaded', () => {
         const meta = rowActionMeta(context);
         const prefix = meta.source === 'unique' ? 'Unique key' : 'Primary key';
         return `${prefix}: ${keys.join(', ')}`;
+    }
+
+    function cellKey(rowIndex, columnName) {
+        return `${rowIndex}::${columnName}`;
+    }
+
+    function clearCellStatus(rowIndex, columnName, delay = 1200) {
+        const key = cellKey(rowIndex, columnName);
+        window.setTimeout(() => {
+            if (state.cellStatus[key] && state.cellStatus[key].until) {
+                delete state.cellStatus[key];
+                renderDataPanel();
+            }
+        }, delay);
+    }
+
+    function databaseStorageName() {
+        return bootstrapData.database_name || 'database';
+    }
+
+    function columnWidthStorageKey() {
+        return `sqlm:columnWidths:${databaseStorageName()}:${state.selectedTable || 'table'}`;
+    }
+
+    function loadColumnWidths() {
+        try {
+            const raw = window.localStorage.getItem(columnWidthStorageKey());
+            state.columnWidths = raw ? JSON.parse(raw) : {};
+        } catch (error) {
+            state.columnWidths = {};
+        }
+    }
+
+    function saveColumnWidths() {
+        try {
+            window.localStorage.setItem(columnWidthStorageKey(), JSON.stringify(state.columnWidths || {}));
+        } catch (error) {
+            /* localStorage can fail in private mode; resizing still works for this session. */
+        }
+    }
+
+    function defaultColumnWidth(column) {
+        const name = String(column.name || '').toLowerCase();
+        const type = String(column.column_type || column.data_type || '').toLowerCase();
+        const declaredLength = declaredColumnLength(column);
+
+        if (isMultilineColumn(column) || /content|description|meta|json|body|message|payload|config|settings|notes?/.test(name)) return 360;
+        if (/url|link|image|avatar|thumbnail|path|file/.test(name)) return 260;
+        if (/token|secret|hash|uuid|guid|api_key|access_key/.test(name)) return 240;
+        if (/email/.test(name)) return 220;
+        if (type.includes('datetime') || type.includes('timestamp')) return 178;
+        if (type.includes('date') || type.includes('time')) return 136;
+        if (isBooleanColumn(column)) return 92;
+        if (isNumericColumn(column)) return /(^id$|_id$|id$)/.test(name) ? 112 : 104;
+        if (/enum|set/.test(type)) return 150;
+        if (/varchar|char/.test(type)) {
+            if (declaredLength >= 191) return 230;
+            if (declaredLength >= 100) return 200;
+            if (declaredLength >= 60) return 170;
+        }
+
+        return Math.max(132, Math.min(240, String(column.name || '').length * 10 + 64));
+    }
+
+    function declaredColumnLength(column) {
+        const match = String(column.column_type || column.data_type || '').match(/\((\d+)/);
+        return match ? Number(match[1]) || 0 : 0;
+    }
+
+    function staticColumnMeta(columnName) {
+        const map = {
+            __select__: { defaultWidth: 56, minWidth: 48, maxWidth: 180 },
+            __row_index__: { defaultWidth: 72, minWidth: 48, maxWidth: 220 },
+            __actions__: { defaultWidth: 92, minWidth: 60, maxWidth: 220 },
+        };
+        return map[columnName] || null;
+    }
+
+    function minColumnWidth(columnName) {
+        const staticMeta = staticColumnMeta(columnName);
+        return staticMeta ? staticMeta.minWidth : 60;
+    }
+
+    function maxColumnWidth(columnName) {
+        const staticMeta = staticColumnMeta(columnName);
+        return staticMeta ? staticMeta.maxWidth : 640;
+    }
+
+    function resolveColumnWidth(columnName) {
+        const staticMeta = staticColumnMeta(columnName);
+        if (staticMeta) {
+            const savedStaticWidth = Number(state.columnWidths[columnName]);
+            if (Number.isFinite(savedStaticWidth) && savedStaticWidth > 0) {
+                return savedStaticWidth;
+            }
+            return staticMeta.defaultWidth;
+        }
+
+        const column = columnByName(columnName);
+        return column ? columnWidth(column) : 0;
+    }
+
+    function columnWidth(column) {
+        const saved = Number(state.columnWidths[column.name]);
+        if (Number.isFinite(saved) && saved > 0) {
+            return saved;
+        }
+
+        return defaultColumnWidth(column);
+    }
+
+    function setColumnWidth(columnName, width) {
+        state.columnWidths[columnName] = Math.max(minColumnWidth(columnName), Math.min(maxColumnWidth(columnName), Math.round(Number(width) || 0)));
+        saveColumnWidths();
+        applyColumnWidths();
+    }
+
+    function resetColumnWidths() {
+        state.columnWidths = {};
+        saveColumnWidths();
+        renderDataPanel();
+    }
+
+    function autoFitColumn(columnName) {
+        if (!state.context) return;
+        const staticMeta = staticColumnMeta(columnName);
+        if (staticMeta) {
+            if (columnName === '__select__') {
+                setColumnWidth(columnName, 56);
+                return;
+            }
+            if (columnName === '__actions__') {
+                setColumnWidth(columnName, 92);
+                return;
+            }
+            if (columnName === '__row_index__') {
+                const pagination = state.context.pagination || {};
+                const rows = Array.isArray(state.context.rows) ? state.context.rows : [];
+                const start = Number(pagination.offset) || 0;
+                const maxIndex = start + rows.length;
+                const hasPending = rows.some((row) => row && row.__sqlmPending);
+                const estimated = Math.max(48, String(Math.max(maxIndex, 1)).length * 9 + (hasPending ? 64 : 36));
+                setColumnWidth(columnName, estimated);
+                return;
+            }
+        }
+
+        const column = state.context.columns.find((item) => item.name === columnName);
+        if (!column) return;
+        let longest = String(columnName).length;
+        state.context.rows.forEach((row) => {
+            longest = Math.max(longest, normalizePreviewValue(row[columnName]).length);
+        });
+        setColumnWidth(columnName, Math.min(maxColumnWidth(columnName), Math.max(minColumnWidth(columnName), longest * 7 + 34)));
+    }
+
+    function autoFitAllColumns() {
+        if (!state.context) return;
+        state.context.columns.forEach((column) => autoFitColumn(column.name));
+    }
+
+    function applyColumnWidths() {
+        if (!refs.dataPanel || !state.context) return;
+        ['__select__', '__row_index__', '__actions__'].forEach((columnName) => {
+            const width = `${resolveColumnWidth(columnName)}px`;
+            refs.dataPanel.querySelectorAll(`[data-col-name="${selectorEscape(columnName)}"]`).forEach((node) => {
+                node.style.width = width;
+                node.style.minWidth = width;
+                node.style.maxWidth = width;
+            });
+        });
+        state.context.columns.forEach((column) => {
+            const width = `${columnWidth(column)}px`;
+            refs.dataPanel.querySelectorAll(`[data-col-name="${selectorEscape(column.name)}"]`).forEach((node) => {
+                node.style.width = width;
+                node.style.minWidth = width;
+                node.style.maxWidth = width;
+            });
+        });
+        applyTableWidth();
+    }
+
+    function tablePixelWidth() {
+        if (!state.context || !Array.isArray(state.context.columns)) {
+            return 0;
+        }
+
+        const staticWidth = resolveColumnWidth('__select__') + resolveColumnWidth('__row_index__') + resolveColumnWidth('__actions__');
+        const dataWidth = state.context.columns.reduce((total, column) => total + columnWidth(column), 0);
+        const columnCount = state.context.columns.length;
+        const averageColumnFloor = columnCount >= 8 ? 148 : (columnCount >= 5 ? 136 : 112);
+        const columnCountFloor = staticWidth + (columnCount * averageColumnFloor);
+        return Math.ceil(Math.max(staticWidth + dataWidth, columnCountFloor) + columnCount + 12);
+    }
+
+    function applyTableWidth() {
+        if (!refs.dataPanel || !state.context) return;
+        const table = refs.dataPanel.querySelector('.sqlm-grid-table');
+        const wrap = refs.dataPanel.querySelector('.sqlm-grid-wrap');
+        if (!table || !wrap) return;
+
+        const width = Math.max(tablePixelWidth(), Math.ceil(wrap.clientWidth || 0) + 1);
+        wrap.style.setProperty('--sqlm-grid-width', `${width}px`);
+        table.style.setProperty('--sqlm-grid-width', `${width}px`);
+        table.style.width = `${width}px`;
+        table.style.minWidth = `${width}px`;
+        table.style.maxWidth = 'none';
+    }
+
+    function estimateStandaloneGridColumnWidth(text, isFirstColumn = false) {
+        const length = String(text || '').trim().length;
+        const min = isFirstColumn ? 64 : 112;
+        const max = /json|payload|content|description|statement|message/i.test(String(text || '')) ? 420 : 360;
+        return Math.max(min, Math.min(max, length * 7 + 34));
+    }
+
+    function applyStandaloneGridWidths(root) {
+        if (!root) return;
+        root.querySelectorAll('.sqlm-grid-wrap').forEach((wrap) => {
+            if (refs.dataPanel && refs.dataPanel.contains(wrap)) return;
+            const table = wrap.querySelector('.sqlm-grid-table');
+            if (!table) return;
+
+            const headers = Array.from(table.querySelectorAll('thead th'));
+            const bodyRows = Array.from(table.querySelectorAll('tbody tr')).slice(0, 80);
+            const columnCount = headers.length || bodyRows.reduce((count, row) => Math.max(count, row.children.length), 0);
+            if (columnCount <= 0) return;
+
+            let contentWidth = 0;
+            for (let index = 0; index < columnCount; index += 1) {
+                const samples = [
+                    headers[index] ? headers[index].textContent : '',
+                    ...bodyRows.map((row) => row.children[index] ? row.children[index].textContent : ''),
+                ];
+                const longest = samples.reduce((max, text) => {
+                    return String(text || '').trim().length > String(max || '').trim().length ? text : max;
+                }, '');
+                contentWidth += estimateStandaloneGridColumnWidth(longest, index === 0);
+            }
+
+            const width = Math.max(
+                Math.ceil(contentWidth + columnCount + 12),
+                Math.ceil(columnCount * (columnCount >= 8 ? 142 : 118) + 24),
+                Math.ceil(wrap.clientWidth || 0) + 1
+            );
+
+            wrap.style.setProperty('--sqlm-grid-width', `${width}px`);
+            table.style.setProperty('--sqlm-grid-width', `${width}px`);
+            table.style.width = `${width}px`;
+            table.style.minWidth = `${width}px`;
+            table.style.maxWidth = 'none';
+        });
+    }
+
+    function refreshGridWidths() {
+        applyColumnWidths();
+        applyStandaloneGridWidths(refs.structurePanel);
+        applyStandaloneGridWidths(refs.queryPanel);
+    }
+
+    function applyExplorerWidth() {
+        const width = Math.max(220, Math.min(600, Number(state.explorerWidth) || 286));
+        state.explorerWidth = width;
+        app.style.setProperty('--sqlm-explorer-width', `${width}px`);
     }
 
     function setSelectedRow(rowIndex, preferredColumn = '') {
@@ -430,6 +705,81 @@ document.addEventListener('DOMContentLoaded', () => {
         return /text|json/i.test(String(column.data_type || '')) || /text|json/i.test(String(column.column_type || ''));
     }
 
+    function isDateColumn(column) {
+        return /date|time|timestamp/i.test(String(column.data_type || column.column_type || ''));
+    }
+
+    function isBooleanColumn(column) {
+        const name = String(column.name || '').toLowerCase();
+        const type = String(column.column_type || column.data_type || '').toLowerCase();
+        return type === 'tinyint(1)' || type === 'bit(1)' || name.startsWith('is_') || name.startsWith('has_') || name.startsWith('can_') || name.includes('enabled');
+    }
+
+    function enumOptions(column) {
+        const type = String(column.column_type || '');
+        const match = type.match(/^enum\((.*)\)$/i);
+        if (!match) {
+            return [];
+        }
+
+        const options = [];
+        const regex = /'((?:\\'|[^'])*)'/g;
+        let item = regex.exec(match[1]);
+        while (item) {
+            options.push(item[1].replace(/\\'/g, "'"));
+            item = regex.exec(match[1]);
+        }
+        return options;
+    }
+
+    function isJsonColumn(column) {
+        return /json/i.test(String(column.data_type || column.column_type || '')) || /json|meta/i.test(String(column.name || ''));
+    }
+
+    function isReadonlyColumn(column) {
+        return isGeneratedColumn(column);
+    }
+
+    function editorInputType(column) {
+        const type = String(column.data_type || column.column_type || '').toLowerCase();
+        if (type === 'date') return 'date';
+        if (type.includes('datetime') || type.includes('timestamp')) return 'datetime-local';
+        if (type === 'time') return 'time';
+        if (isNumericColumn(column) && !isBooleanColumn(column)) return 'number';
+        return 'text';
+    }
+
+    function valueForEditor(value, column) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        const text = String(value);
+        const inputType = editorInputType(column);
+        if (inputType === 'datetime-local') {
+            return text.replace(' ', 'T').slice(0, 16);
+        }
+
+        if (inputType === 'date') {
+            return text.slice(0, 10);
+        }
+
+        if (inputType === 'time') {
+            return text.slice(0, 8);
+        }
+
+        return text;
+    }
+
+    function valueFromEditor(value, column) {
+        const inputType = editorInputType(column);
+        if (inputType === 'datetime-local') {
+            return String(value || '').replace('T', ' ') + (String(value || '').length === 16 ? ':00' : '');
+        }
+
+        return value;
+    }
+
     function toDisplayString(value) {
         if (value === null || value === undefined) {
             return '';
@@ -450,6 +800,467 @@ document.addEventListener('DOMContentLoaded', () => {
 
             return Object.keys(rowKey).every((key) => String(row.__sqlmRowKey[key]) === String(rowKey[key]));
         });
+    }
+
+    function rowKeyForRow(row) {
+        if (!row || !state.context) {
+            return null;
+        }
+
+        if (row.__sqlmRowKey && typeof row.__sqlmRowKey === 'object') {
+            return row.__sqlmRowKey;
+        }
+
+        const keys = rowIdentityKeys(state.context);
+        if (keys.length === 0) {
+            return null;
+        }
+
+        const rowKey = {};
+        keys.forEach((key) => {
+            rowKey[key] = row[key];
+        });
+        return rowKey;
+    }
+
+    function columnByName(columnName) {
+        return state.context && Array.isArray(state.context.columns)
+            ? state.context.columns.find((column) => column.name === columnName) || null
+            : null;
+    }
+
+    function renderCellDisplay(row, rowIndex, column) {
+        const rawValue = row[column.name];
+        const fullText = normalizePreviewValue(rawValue);
+        const shortText = truncateCellText(fullText);
+        const isLong = fullText.length > 88 || isMultilineColumn(column);
+        return `
+            <button type="button" class="sqlm-cell-button" data-cell-edit="${rowIndex}" data-row-index="${rowIndex}" data-column="${escapeHtml(column.name)}">
+                <span class="sqlm-cell-text">${rawValue === null || rawValue === undefined ? '<span class="sqlm-null">(NULL)</span>' : (shortText === '' ? '<span class="text-secondary">(empty)</span>' : escapeHtml(shortText))}</span>
+                ${isLong ? '<span class="sqlm-cell-more" title="Alt+Enter mở editor lớn">↗</span>' : ''}
+            </button>
+        `;
+    }
+
+    function renderCellEditor(row, rowIndex, column) {
+        const value = row[column.name];
+        const isNull = value === null || value === undefined;
+        const common = `data-inline-editor="1" data-row-index="${rowIndex}" data-column="${escapeHtml(column.name)}"`;
+        const options = enumOptions(column);
+
+        if (options.length > 0) {
+            return `
+                <select class="sqlm-inline-editor" ${common}>
+                    ${column.is_nullable ? `<option value="__SQLM_NULL__" ${isNull ? 'selected' : ''}>(NULL)</option>` : ''}
+                    ${options.map((option) => `<option value="${escapeHtml(option)}" ${String(value ?? '') === option ? 'selected' : ''}>${escapeHtml(option)}</option>`).join('')}
+                </select>
+            `;
+        }
+
+        if (isBooleanColumn(column)) {
+            const checked = ['1', 'true', 'yes', 'on'].includes(String(value ?? '').toLowerCase());
+            return `
+                <select class="sqlm-inline-editor" ${common}>
+                    ${column.is_nullable ? `<option value="__SQLM_NULL__" ${isNull ? 'selected' : ''}>(NULL)</option>` : ''}
+                    <option value="1" ${checked && !isNull ? 'selected' : ''}>true / 1</option>
+                    <option value="0" ${!checked && !isNull ? 'selected' : ''}>false / 0</option>
+                </select>
+            `;
+        }
+
+        if (isMultilineColumn(column)) {
+            return `
+                <div class="sqlm-inline-textarea-wrap">
+                    <textarea class="sqlm-inline-editor sqlm-inline-textarea ${isJsonColumn(column) ? 'is-json' : ''}" rows="1" ${common}>${escapeHtml(valueForEditor(value, column))}</textarea>
+                    ${isJsonColumn(column) ? '<button type="button" class="sqlm-format-json" data-format-json>Format JSON</button>' : ''}
+                </div>
+            `;
+        }
+
+        return `<input class="sqlm-inline-editor" type="${editorInputType(column)}" value="${escapeHtml(valueForEditor(value, column))}" ${common}>`;
+    }
+
+    function cellClass(rowIndex, columnName) {
+        const status = state.cellStatus[cellKey(rowIndex, columnName)] || {};
+        const editing = state.inlineEdit && state.inlineEdit.rowIndex === rowIndex && state.inlineEdit.column === columnName;
+        return [
+            'sqlm-cell',
+            editing ? 'is-editing' : '',
+            status.state ? `is-${status.state}` : '',
+        ].filter(Boolean).join(' ');
+    }
+
+    function beginInlineEdit(rowIndex, columnName) {
+        if (!state.context || hasActiveTransaction()) {
+            if (hasActiveTransaction()) showFlash('Inline edit tạm tắt trong transaction mode. Hãy commit/rollback trước.', 'warning');
+            return;
+        }
+
+        const row = state.context.rows[rowIndex];
+        const column = columnByName(columnName);
+        if (!row || !column) return;
+
+        if (!supportsRowMutations(state.context)) {
+            showFlash(rowActionMeta(state.context).reason || 'Bảng này không có row key để update inline.', 'warning');
+            return;
+        }
+
+        if (isReadonlyColumn(column)) {
+            showFlash('Cột generated/readonly không thể sửa inline.', 'warning');
+            return;
+        }
+
+        if (rowIdentityKeys(state.context).includes(columnName) && !window.confirm('Bạn đang sửa primary/unique key. Tiếp tục?')) {
+            return;
+        }
+
+        state.inlineEdit = {
+            rowIndex,
+            column: columnName,
+            originalValue: row[columnName],
+            saving: false,
+        };
+        setSelectedRow(rowIndex, columnName);
+        renderDataPanel();
+        window.setTimeout(() => {
+            const editor = refs.dataPanel.querySelector('[data-inline-editor]');
+            if (editor) {
+                editor.focus();
+                if (typeof editor.select === 'function') editor.select();
+                autoResizeInlineEditor(editor);
+            }
+        }, 0);
+    }
+
+    function autoResizeInlineEditor(editor) {
+        if (!editor || editor.tagName !== 'TEXTAREA') return;
+        editor.style.height = 'auto';
+        editor.style.height = `${Math.min(220, Math.max(30, editor.scrollHeight))}px`;
+    }
+
+    function cancelInlineEdit() {
+        state.inlineEdit = null;
+        renderDataPanel();
+    }
+
+    function inlinePayloadFromEditor(editor, column) {
+        let value = editor.value;
+        let isNull = value === '__SQLM_NULL__';
+        if (isNull) {
+            value = '';
+        } else {
+            value = valueFromEditor(value, column);
+        }
+
+        if (isJsonColumn(column) && !isNull && String(value).trim() !== '') {
+            JSON.parse(String(value));
+        }
+
+        return { value, is_null: isNull };
+    }
+
+    async function saveInlineEditor(editor, moveDirection = 0) {
+        if (!state.inlineEdit || state.inlineEdit.saving || !editor) return;
+
+        const { rowIndex, column: columnName, originalValue } = state.inlineEdit;
+        const row = state.context.rows[rowIndex];
+        const column = columnByName(columnName);
+        const rowKey = rowKeyForRow(row);
+        if (!row || !column || !rowKey) {
+            showFlash('Không xác định được row key để lưu inline.', 'danger');
+            return;
+        }
+
+        let payload;
+        try {
+            payload = inlinePayloadFromEditor(editor, column);
+        } catch (error) {
+            state.cellStatus[cellKey(rowIndex, columnName)] = { state: 'error', message: 'JSON không hợp lệ.' };
+            renderDataPanel();
+            showFlash('JSON không hợp lệ, chưa lưu.', 'danger');
+            return;
+        }
+
+        const nextValue = payload.is_null ? null : payload.value;
+        if (String(nextValue ?? '') === String(originalValue ?? '')) {
+            state.inlineEdit = null;
+            renderDataPanel();
+            moveInlineSelection(rowIndex, columnName, moveDirection);
+            return;
+        }
+
+        const params = new URLSearchParams();
+        params.set('_csrf', state.csrfToken);
+        params.set('table', state.context.table);
+        params.set('row_key_json', JSON.stringify(rowKey));
+        params.set('values_json', JSON.stringify({ [columnName]: payload }));
+
+        try {
+            state.inlineEdit.saving = true;
+            state.cellStatus[cellKey(rowIndex, columnName)] = { state: 'dirty' };
+            renderDataPanel();
+            const result = await requestJson(endpoints.update, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-CSRF-TOKEN': state.csrfToken,
+                },
+                body: params.toString(),
+            });
+
+            row[columnName] = nextValue;
+            if (row.__sqlmRowKey && Object.prototype.hasOwnProperty.call(row.__sqlmRowKey, columnName)) {
+                row.__sqlmRowKey[columnName] = nextValue;
+            }
+            state.inlineEdit = null;
+            state.cellStatus[cellKey(rowIndex, columnName)] = { state: 'saved', until: Date.now() + 1000 };
+            renderDataPanel();
+            clearCellStatus(rowIndex, columnName, 1000);
+            showFlash(result.message || 'Đã lưu ô dữ liệu.', 'success');
+            moveInlineSelection(rowIndex, columnName, moveDirection);
+        } catch (error) {
+            state.inlineEdit = null;
+            state.cellStatus[cellKey(rowIndex, columnName)] = { state: 'error', message: error.message };
+            renderDataPanel();
+            showFlash(error.message, 'danger');
+        }
+    }
+
+    function moveInlineSelection(rowIndex, columnName, direction) {
+        if (!direction || !state.context) return;
+        const columns = state.context.columns || [];
+        const index = columns.findIndex((column) => column.name === columnName);
+        if (index < 0) return;
+        let nextRow = rowIndex;
+        let nextColumnIndex = index + direction;
+        if (nextColumnIndex >= columns.length) {
+            nextColumnIndex = 0;
+            nextRow += 1;
+        } else if (nextColumnIndex < 0) {
+            nextColumnIndex = columns.length - 1;
+            nextRow -= 1;
+        }
+        if (nextRow < 0 || nextRow >= state.context.rows.length) return;
+        beginInlineEdit(nextRow, columns[nextColumnIndex].name);
+    }
+
+    function closeContextMenu() {
+        document.querySelectorAll('.sqlm-context-menu').forEach((node) => node.remove());
+    }
+
+    function openLargeEditor(editor) {
+        const column = columnByName(editor.getAttribute('data-column') || '');
+        const overlay = document.createElement('div');
+        overlay.className = 'sqlm-large-editor';
+        overlay.innerHTML = `
+            <div class="sqlm-large-editor-box">
+                <div class="sqlm-large-editor-head">
+                    <strong>${escapeHtml(column ? column.name : 'Cell editor')}</strong>
+                    <button type="button" data-large-close>×</button>
+                </div>
+                <textarea spellcheck="false">${escapeHtml(editor.value || '')}</textarea>
+                <div class="sqlm-large-editor-actions">
+                    ${column && isJsonColumn(column) ? '<button type="button" class="btn btn-light border btn-sm" data-large-format>Format JSON</button>' : ''}
+                    <button type="button" class="btn btn-light border btn-sm" data-large-cancel>Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm" data-large-apply>Apply</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        const area = overlay.querySelector('textarea');
+        area.focus();
+        overlay.querySelectorAll('[data-large-close], [data-large-cancel]').forEach((button) => {
+            button.addEventListener('click', () => {
+                overlay.remove();
+                editor.focus();
+            });
+        });
+        const formatButton = overlay.querySelector('[data-large-format]');
+        if (formatButton) {
+            formatButton.addEventListener('click', () => {
+                try {
+                    area.value = JSON.stringify(JSON.parse(area.value || '{}'), null, 2);
+                } catch (error) {
+                    showFlash('JSON không hợp lệ nên chưa format được.', 'danger');
+                }
+            });
+        }
+        overlay.querySelector('[data-large-apply]').addEventListener('click', () => {
+            editor.value = area.value;
+            autoResizeInlineEditor(editor);
+            overlay.remove();
+            editor.focus();
+        });
+    }
+
+    async function setInlineCellValue(rowIndex, columnName, value, isNull = false) {
+        const row = state.context && state.context.rows ? state.context.rows[rowIndex] : null;
+        const column = columnByName(columnName);
+        if (!row || !column) return;
+        if (isNull && !column.is_nullable) {
+            showFlash('Cột này không cho phép NULL.', 'warning');
+            return;
+        }
+        state.inlineEdit = { rowIndex, column: columnName, originalValue: row[columnName], saving: false };
+        const fakeEditor = { value: isNull ? '__SQLM_NULL__' : String(value ?? ''), tagName: 'INPUT' };
+        await saveInlineEditor(fakeEditor);
+    }
+
+    function openCellContextMenu(event, rowIndex, columnName) {
+        event.preventDefault();
+        closeContextMenu();
+        if (!state.context) return;
+
+        const row = state.context.rows[rowIndex];
+        const value = row ? row[columnName] : '';
+        const menu = document.createElement('div');
+        menu.className = 'sqlm-context-menu';
+        menu.style.left = `${event.clientX}px`;
+        menu.style.top = `${event.clientY}px`;
+        menu.innerHTML = `
+            <button type="button" data-menu-action="edit"><i class="fas fa-pen"></i>Edit Cell</button>
+            <button type="button" data-menu-action="null"><i class="fas fa-ban"></i>Set NULL</button>
+            <button type="button" data-menu-action="copy"><i class="fas fa-copy"></i>Copy Value</button>
+            <button type="button" data-menu-action="paste"><i class="fas fa-paste"></i>Paste Value</button>
+            <button type="button" data-menu-action="revert"><i class="fas fa-rotate-left"></i>Revert Changes</button>
+        `;
+        document.body.appendChild(menu);
+
+        menu.querySelectorAll('[data-menu-action]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const action = button.getAttribute('data-menu-action');
+                closeContextMenu();
+                try {
+                    if (action === 'edit') {
+                        beginInlineEdit(rowIndex, columnName);
+                    } else if (action === 'null') {
+                        await setInlineCellValue(rowIndex, columnName, '', true);
+                    } else if (action === 'copy') {
+                        await navigator.clipboard?.writeText(normalizePreviewValue(value));
+                        showFlash('Đã copy giá trị ô.', 'success');
+                    } else if (action === 'paste') {
+                        const text = await navigator.clipboard?.readText();
+                        await setInlineCellValue(rowIndex, columnName, text || '', false);
+                    } else if (action === 'revert') {
+                        delete state.cellStatus[cellKey(rowIndex, columnName)];
+                        state.inlineEdit = null;
+                        renderDataPanel();
+                    }
+                } catch (error) {
+                    showFlash(error.message || 'Không thao tác được clipboard.', 'danger');
+                }
+            });
+        });
+    }
+
+    function startColumnResize(event) {
+        const columnName = event.currentTarget.getAttribute('data-col-resize') || '';
+        if (!columnName) return;
+        const startWidth = resolveColumnWidth(columnName);
+        if (startWidth <= 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const handle = event.currentTarget;
+        if (event.pointerId !== undefined && handle && typeof handle.setPointerCapture === 'function') {
+            try {
+                handle.setPointerCapture(event.pointerId);
+            } catch (error) {
+                /* ignore capture failure */
+            }
+        }
+        state.resize = {
+            type: 'column',
+            column: columnName,
+            startX: event.clientX,
+            startWidth,
+            handle,
+            pointerId: event.pointerId,
+        };
+        document.body.classList.add('sqlm-is-resizing');
+        showResizeGuide(event.clientX);
+        window.addEventListener('pointermove', handleResizeMove);
+        window.addEventListener('pointerup', finishResize, { once: true });
+        window.addEventListener('pointercancel', finishResize, { once: true });
+    }
+
+    function startExplorerResize(event) {
+        if (state.explorerCollapsed) return;
+        event.preventDefault();
+        state.resize = {
+            type: 'explorer',
+            startX: event.clientX,
+            startWidth: state.explorerWidth,
+        };
+        document.body.classList.add('sqlm-is-resizing');
+        showResizeGuide(event.clientX);
+        window.addEventListener('pointermove', handleResizeMove);
+        window.addEventListener('pointerup', finishResize, { once: true });
+    }
+
+    function showResizeGuide(x) {
+        let guide = document.querySelector('.sqlm-resize-guide');
+        if (!guide) {
+            guide = document.createElement('div');
+            guide.className = 'sqlm-resize-guide';
+            document.body.appendChild(guide);
+        }
+        guide.style.left = `${x}px`;
+    }
+
+    function handleResizeMove(event) {
+        if (!state.resize) return;
+        showResizeGuide(event.clientX);
+        const delta = event.clientX - state.resize.startX;
+        if (state.resize.type === 'column') {
+            setColumnWidth(state.resize.column, state.resize.startWidth + delta);
+        } else if (state.resize.type === 'explorer') {
+            state.explorerWidth = Math.max(220, Math.min(600, state.resize.startWidth + delta));
+            applyExplorerWidth();
+        }
+    }
+
+    function finishResize() {
+        if (state.resize && state.resize.type === 'column' && state.resize.handle && state.resize.pointerId !== undefined) {
+            try {
+                if (typeof state.resize.handle.releasePointerCapture === 'function') {
+                    state.resize.handle.releasePointerCapture(state.resize.pointerId);
+                }
+            } catch (error) {
+                /* ignore capture release failure */
+            }
+        }
+        if (state.resize && state.resize.type === 'explorer') {
+            try {
+                window.localStorage.setItem('sqlm:explorerWidth', String(state.explorerWidth));
+            } catch (error) {
+                /* ignore */
+            }
+        }
+        state.resize = null;
+        document.body.classList.remove('sqlm-is-resizing');
+        document.querySelectorAll('.sqlm-resize-guide').forEach((node) => node.remove());
+        window.removeEventListener('pointermove', handleResizeMove);
+        window.removeEventListener('pointercancel', finishResize);
+    }
+
+    function moveCellByArrow(event) {
+        if (!state.context || state.activeTab !== 'data' || state.inlineEdit) return;
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName || '')) return;
+        const columns = state.context.columns || [];
+        if (columns.length === 0) return;
+        const currentRow = state.selectedRowIndex === null ? 0 : state.selectedRowIndex;
+        const currentColumn = state.cellPreview.column || columns[0].name;
+        let rowIndex = currentRow;
+        let columnIndex = Math.max(0, columns.findIndex((column) => column.name === currentColumn));
+        if (event.key === 'ArrowRight') columnIndex = Math.min(columns.length - 1, columnIndex + 1);
+        else if (event.key === 'ArrowLeft') columnIndex = Math.max(0, columnIndex - 1);
+        else if (event.key === 'ArrowDown') rowIndex = Math.min(state.context.rows.length - 1, rowIndex + 1);
+        else if (event.key === 'ArrowUp') rowIndex = Math.max(0, rowIndex - 1);
+        else return;
+        event.preventDefault();
+        setSelectedRow(rowIndex, columns[columnIndex].name);
+        renderDataPanel();
+        updateToolbarMeta();
     }
 
     function buildPreviewRow(values, operationId) {
@@ -815,10 +1626,31 @@ document.addEventListener('DOMContentLoaded', () => {
         refs.insertBtn.disabled = !context || state.transaction.busy;
         refs.wrapBtn.classList.toggle('is-active', state.wrapText);
         app.classList.toggle('is-wrap-text', state.wrapText);
+        app.classList.toggle('is-explorer-collapsed', state.explorerCollapsed);
+        if (refs.explorerToggleBtn) {
+            refs.explorerToggleBtn.classList.toggle('is-active', !state.explorerCollapsed);
+            refs.explorerToggleBtn.title = state.explorerCollapsed ? 'Show Database Explorer' : 'Hide Database Explorer';
+        }
         document.querySelectorAll('[data-sqlm-toolbar]').forEach((group) => {
             group.classList.toggle('is-active', group.getAttribute('data-sqlm-toolbar') === state.activeTab);
         });
         updateStatusBar();
+    }
+
+    async function openTableDetail(tableName, detail) {
+        if (!tableName) {
+            return;
+        }
+
+        state.structureFocus = detail || 'columns';
+        state.expandedTables[tableName] = true;
+        if (tableName !== state.selectedTable) {
+            await loadTable(tableName, { page: 1 });
+        } else {
+            renderStructurePanel();
+            renderTableList();
+        }
+        setActiveTab('structure');
     }
 
     function renderTableList() {
@@ -849,27 +1681,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
         refs.tableList.innerHTML = visible.map((table) => {
             const locked = hasActiveTransaction() && table.name !== state.transaction.table;
+            const isActive = table.name === state.selectedTable;
+            const expanded = keyword !== '' ? true : (state.expandedTables[table.name] !== undefined ? !!state.expandedTables[table.name] : isActive);
+            const detailContext = isActive ? state.context : null;
+            const columnCount = detailContext && Array.isArray(detailContext.columns) ? detailContext.columns.length : null;
+            const indexCount = detailContext && Array.isArray(detailContext.indexes) ? detailContext.indexes.length : null;
+            const foreignKeyCount = detailContext && Array.isArray(detailContext.foreign_keys) ? detailContext.foreign_keys.length : null;
+            const triggerCount = detailContext && Array.isArray(detailContext.triggers) ? detailContext.triggers.length : null;
+            const detailLabel = (label, count) => count === null ? label : `${label} (${count})`;
             return `
-                <button type="button" class="sqlm-table-item ${table.name === state.selectedTable ? 'is-active' : ''}" data-table-name="${escapeHtml(table.name)}" ${locked ? 'disabled' : ''}>
-                    <span class="sqlm-table-item-main">
-                        <span class="sqlm-table-icon"><i class="fas fa-table"></i></span>
-                        <span class="sqlm-table-text">
-                            <strong>${escapeHtml(table.name)}</strong>
-                            <small>${escapeHtml(table.engine || 'InnoDB')} · ${escapeHtml(table.collation || 'n/a')}</small>
-                        </span>
-                    </span>
-                    <div class="sqlm-table-meta">
-                        <span>${Number(table.estimated_rows || 0)} rows</span>
-                        <span>AI ${table.auto_increment ? escapeHtml(String(table.auto_increment)) : '-'}</span>
-                        ${locked ? '<span class="sqlm-table-lock">Locked by transaction</span>' : ''}
+                <div class="sqlm-table-node ${isActive ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}">
+                    <div class="sqlm-table-row">
+                        <button type="button" class="sqlm-table-caret" data-table-toggle="${escapeHtml(table.name)}" aria-label="Toggle ${escapeHtml(table.name)}">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button type="button" class="sqlm-table-item" data-table-name="${escapeHtml(table.name)}" ${locked ? 'disabled' : ''}>
+                            <span class="sqlm-table-item-main">
+                                <span class="sqlm-table-icon"><i class="fas fa-table"></i></span>
+                                <span class="sqlm-table-text">
+                                    <strong>${escapeHtml(table.name)}</strong>
+                                    <small>${escapeHtml(table.engine || 'InnoDB')} · ${escapeHtml(table.collation || 'n/a')}</small>
+                                </span>
+                            </span>
+                            <div class="sqlm-table-meta">
+                                <span>${Number(table.estimated_rows || 0)} rows</span>
+                                <span>AI ${table.auto_increment ? escapeHtml(String(table.auto_increment)) : '-'}</span>
+                                ${locked ? '<span class="sqlm-table-lock">Locked by transaction</span>' : ''}
+                            </div>
+                        </button>
                     </div>
-                </button>
+                    <div class="sqlm-table-children">
+                        <button type="button" class="sqlm-table-child ${isActive && state.structureFocus === 'columns' ? 'is-active' : ''}" data-table-detail="columns" data-detail-table="${escapeHtml(table.name)}">
+                            <i class="fas fa-list"></i><span>${escapeHtml(detailLabel('Columns', columnCount))}</span>
+                        </button>
+                        <button type="button" class="sqlm-table-child ${isActive && state.structureFocus === 'indexes' ? 'is-active' : ''}" data-table-detail="indexes" data-detail-table="${escapeHtml(table.name)}">
+                            <i class="fas fa-key"></i><span>${escapeHtml(detailLabel('Indexes', indexCount))}</span>
+                        </button>
+                        <button type="button" class="sqlm-table-child ${isActive && state.structureFocus === 'foreign_keys' ? 'is-active' : ''}" data-table-detail="foreign_keys" data-detail-table="${escapeHtml(table.name)}">
+                            <i class="fas fa-link"></i><span>${escapeHtml(detailLabel('Foreign keys', foreignKeyCount))}</span>
+                        </button>
+                        <button type="button" class="sqlm-table-child ${isActive && state.structureFocus === 'triggers' ? 'is-active' : ''}" data-table-detail="triggers" data-detail-table="${escapeHtml(table.name)}">
+                            <i class="fas fa-bolt"></i><span>${escapeHtml(detailLabel('Triggers', triggerCount))}</span>
+                        </button>
+                    </div>
+                </div>
             `;
         }).join('');
 
         refs.tableList.querySelectorAll('[data-table-name]').forEach((button) => {
             button.addEventListener('click', () => {
                 loadTable(button.getAttribute('data-table-name') || '', { page: 1 });
+            });
+        });
+
+        refs.tableList.querySelectorAll('[data-table-toggle]').forEach((button) => {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const tableName = button.getAttribute('data-table-toggle') || '';
+                state.expandedTables[tableName] = !(state.expandedTables[tableName] !== undefined ? state.expandedTables[tableName] : tableName === state.selectedTable);
+                renderTableList();
+            });
+        });
+
+        refs.tableList.querySelectorAll('[data-table-detail]').forEach((button) => {
+            button.addEventListener('click', async (event) => {
+                event.stopPropagation();
+                const tableName = button.getAttribute('data-detail-table') || '';
+                const detail = button.getAttribute('data-table-detail') || 'columns';
+                await openTableDetail(tableName, detail);
             });
         });
     }
@@ -917,6 +1796,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="sqlm-grid-head-tools">
                             <span class="sqlm-inline-note">${rowActionsSupported ? 'Chọn một dòng để bật Sửa/Xóa, click ô dài để xem full ở panel bên phải' : rowActionReason}</span>
+                            <button type="button" class="btn btn-sm btn-light border" data-sqlm-action="auto-fit-columns">Auto Fit</button>
+                            <button type="button" class="btn btn-sm btn-light border" data-sqlm-action="reset-column-widths">Reset Widths</button>
                         </div>
                     </div>
                     ${!rowActionsSupported ? `<div class="sqlm-inline-warning">${escapeHtml(rowActionReason)}</div>` : ''}
@@ -924,21 +1805,36 @@ document.addEventListener('DOMContentLoaded', () => {
                         <table class="table admin-table sqlm-grid-table align-middle">
                             <thead>
                                 <tr>
-                                    <th class="sqlm-select-col">Chọn</th>
-                                    <th>#</th>
-                                    ${columns.map((column) => `<th>${escapeHtml(column.name)}</th>`).join('')}
-                                    <th class="sqlm-action-col">Actions</th>
+                                    <th class="sqlm-select-col" data-col-name="__select__" style="width:${resolveColumnWidth('__select__')}px;min-width:${resolveColumnWidth('__select__')}px;max-width:${resolveColumnWidth('__select__')}px">
+                                        <span class="sqlm-th-label">Chọn</span>
+                                        <span class="sqlm-col-resizer" data-col-resize="__select__" title="Kéo để đổi rộng, double click để auto-fit"></span>
+                                    </th>
+                                    <th data-col-name="__row_index__" style="width:${resolveColumnWidth('__row_index__')}px;min-width:${resolveColumnWidth('__row_index__')}px;max-width:${resolveColumnWidth('__row_index__')}px">
+                                        <span class="sqlm-th-label">#</span>
+                                        <span class="sqlm-col-resizer" data-col-resize="__row_index__" title="Kéo để đổi rộng, double click để auto-fit"></span>
+                                    </th>
+                                    ${columns.map((column) => {
+                                        const width = columnWidth(column);
+                                        return `<th data-col-name="${escapeHtml(column.name)}" style="width:${width}px;min-width:${width}px;max-width:${width}px">
+                                            <span class="sqlm-th-label">${escapeHtml(column.name)}</span>
+                                            <span class="sqlm-col-resizer" data-col-resize="${escapeHtml(column.name)}" title="Kéo để đổi rộng, double click để auto-fit"></span>
+                                        </th>`;
+                                    }).join('')}
+                                    <th class="sqlm-action-col" data-col-name="__actions__" style="width:${resolveColumnWidth('__actions__')}px;min-width:${resolveColumnWidth('__actions__')}px;max-width:${resolveColumnWidth('__actions__')}px">
+                                        <span class="sqlm-th-label">Actions</span>
+                                        <span class="sqlm-col-resizer" data-col-resize="__actions__" title="Kéo để đổi rộng, double click để auto-fit"></span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${rows.length > 0 ? rows.map((row, index) => `
                                     <tr class="sqlm-row ${state.selectedRowIndex === index ? 'is-selected' : ''} ${row.__sqlmPending ? 'is-pending' : ''}" data-row-index="${index}">
-                                        <td class="sqlm-select-col">
+                                        <td class="sqlm-select-col" data-col-name="__select__" style="width:${resolveColumnWidth('__select__')}px;min-width:${resolveColumnWidth('__select__')}px;max-width:${resolveColumnWidth('__select__')}px">
                                             <button type="button" class="sqlm-row-pick ${state.selectedRowIndex === index ? 'is-selected' : ''}" data-row-pick="${index}" aria-label="Chọn dòng ${pagination.offset + index + 1}">
                                                 <span class="sqlm-row-pick-dot"></span>
                                             </button>
                                         </td>
-                                        <td>
+                                        <td data-col-name="__row_index__" style="width:${resolveColumnWidth('__row_index__')}px;min-width:${resolveColumnWidth('__row_index__')}px;max-width:${resolveColumnWidth('__row_index__')}px">
                                             <div class="sqlm-row-index">
                                                 <span>${pagination.offset + index + 1}</span>
                                                 ${row.__sqlmPending ? '<span class="sqlm-badge sqlm-badge-pending">Pending</span>' : ''}
@@ -947,18 +1843,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                         ${columns.map((column) => {
                                             const rawValue = row[column.name];
                                             const fullText = normalizePreviewValue(rawValue);
-                                            const shortText = truncateCellText(fullText);
-                                            const isLong = fullText.length > 88 || isMultilineColumn(column);
+                                            const width = columnWidth(column);
+                                            const isEditing = state.inlineEdit && state.inlineEdit.rowIndex === index && state.inlineEdit.column === column.name;
+                                            const status = state.cellStatus[cellKey(index, column.name)] || {};
                                             return `
-                                                <td class="sqlm-cell ${isLong ? 'is-truncated' : ''}" title="${escapeHtml(fullText)}">
-                                                    <button type="button" class="sqlm-cell-button" data-row-index="${index}" data-column="${escapeHtml(column.name)}">
-                                                        <span class="sqlm-cell-text">${shortText === 'NULL' ? '<span class="sqlm-null">NULL</span>' : escapeHtml(shortText)}</span>
-                                                        ${isLong ? '<span class="sqlm-cell-more">Xem</span>' : ''}
-                                                    </button>
+                                                <td class="${cellClass(index, column.name)}" data-cell="${index}:${escapeHtml(column.name)}" data-col-name="${escapeHtml(column.name)}" title="${escapeHtml(status.message || fullText)}" style="width:${width}px;min-width:${width}px;max-width:${width}px">
+                                                    ${isEditing ? renderCellEditor(row, index, column) : renderCellDisplay(row, index, column)}
                                                 </td>
                                             `;
                                         }).join('')}
-                                        <td class="sqlm-row-actions">
+                                        <td class="sqlm-row-actions" data-col-name="__actions__" style="width:${resolveColumnWidth('__actions__')}px;min-width:${resolveColumnWidth('__actions__')}px;max-width:${resolveColumnWidth('__actions__')}px">
                                             <button type="button" class="btn btn-sm btn-light border" data-row-edit="${index}" ${!rowActionsSupported ? 'disabled' : ''} title="${escapeHtml(rowActionsSupported ? 'Sửa dòng này' : rowActionReason)}"><i class="fas fa-pen"></i></button>
                                             <button type="button" class="btn btn-sm btn-light border border-danger text-danger" data-row-delete="${index}" ${!rowActionsSupported ? 'disabled' : ''} title="${escapeHtml(rowActionsSupported ? 'Xóa dòng này' : rowActionReason)}"><i class="fas fa-trash"></i></button>
                                         </td>
@@ -1007,14 +1901,89 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        refs.dataPanel.querySelectorAll('[data-column]').forEach((button) => {
+        refs.dataPanel.querySelectorAll('[data-cell-edit]').forEach((button) => {
             button.addEventListener('click', (event) => {
                 event.stopPropagation();
                 const rowIndex = Number(button.getAttribute('data-row-index'));
                 const columnName = button.getAttribute('data-column') || '';
                 setSelectedRow(rowIndex, columnName);
-                renderDataPanel();
-                updateToolbarMeta();
+                beginInlineEdit(rowIndex, columnName);
+            });
+            button.addEventListener('dblclick', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                beginInlineEdit(Number(button.getAttribute('data-row-index')), button.getAttribute('data-column') || '');
+            });
+            button.addEventListener('contextmenu', (event) => {
+                event.stopPropagation();
+                openCellContextMenu(event, Number(button.getAttribute('data-row-index')), button.getAttribute('data-column') || '');
+            });
+        });
+
+        refs.dataPanel.querySelectorAll('[data-inline-editor]').forEach((editor) => {
+            editor.addEventListener('click', (event) => event.stopPropagation());
+            editor.addEventListener('pointerdown', (event) => event.stopPropagation());
+            editor.addEventListener('input', () => autoResizeInlineEditor(editor));
+            editor.addEventListener('blur', () => {
+                window.setTimeout(() => {
+                    if (state.inlineEdit && document.activeElement !== editor && !document.activeElement?.hasAttribute('data-format-json')) {
+                        saveInlineEditor(editor);
+                    }
+                }, 80);
+            });
+            editor.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    cancelInlineEdit();
+                    return;
+                }
+                if (event.key === 'Tab') {
+                    event.preventDefault();
+                    saveInlineEditor(editor, event.shiftKey ? -1 : 1);
+                    return;
+                }
+                if (event.key === 'Enter') {
+                    if (event.altKey && editor.tagName === 'TEXTAREA') {
+                        event.preventDefault();
+                        openLargeEditor(editor);
+                        return;
+                    }
+                    const isTextarea = editor.tagName === 'TEXTAREA';
+                    if (!isTextarea || event.ctrlKey) {
+                        event.preventDefault();
+                        saveInlineEditor(editor);
+                    }
+                }
+            });
+        });
+
+        refs.dataPanel.querySelectorAll('[data-format-json]').forEach((button) => {
+            button.addEventListener('mousedown', (event) => event.preventDefault());
+            button.addEventListener('click', () => {
+                const editor = refs.dataPanel.querySelector('[data-inline-editor]');
+                if (!editor) return;
+                try {
+                    editor.value = JSON.stringify(JSON.parse(editor.value || '{}'), null, 2);
+                    autoResizeInlineEditor(editor);
+                    editor.focus();
+                } catch (error) {
+                    showFlash('JSON không hợp lệ nên chưa format được.', 'danger');
+                }
+            });
+        });
+
+        refs.dataPanel.querySelectorAll('[data-col-resize]').forEach((handle) => {
+            const stopResizeEvent = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+            };
+            handle.addEventListener('mousedown', stopResizeEvent);
+            handle.addEventListener('click', stopResizeEvent);
+            handle.addEventListener('pointerdown', startColumnResize);
+            handle.addEventListener('dblclick', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                autoFitColumn(handle.getAttribute('data-col-resize') || '');
             });
         });
 
@@ -1037,6 +2006,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 await deleteSelectedRow();
             });
         });
+
+        applyColumnWidths();
     }
 
     function renderStructurePanel() {
@@ -1045,6 +2016,97 @@ document.addEventListener('DOMContentLoaded', () => {
             refs.structurePanel.innerHTML = '<div class="sqlm-empty">Chưa có schema để hiển thị.</div>';
             return;
         }
+
+        const indexes = Array.isArray(context.indexes) ? context.indexes : [];
+        const foreignKeys = Array.isArray(context.foreign_keys) ? context.foreign_keys : [];
+        const triggers = Array.isArray(context.triggers) ? context.triggers : [];
+        const focus = state.structureFocus || 'columns';
+        const focusLabels = {
+            columns: `Columns (${context.columns.length})`,
+            indexes: `Indexes (${indexes.length})`,
+            foreign_keys: `Foreign keys (${foreignKeys.length})`,
+            triggers: `Triggers (${triggers.length})`,
+        };
+        const focusTitle = focusLabels[focus] || focusLabels.columns;
+        const columnsTable = `
+            <table class="table admin-table sqlm-grid-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Cột</th>
+                        <th>Kiểu</th>
+                        <th>Null</th>
+                        <th>Key</th>
+                        <th>Default</th>
+                        <th>Extra</th>
+                        <th>Comment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${context.columns.map((column) => `
+                        <tr>
+                            <td><strong>${escapeHtml(column.name)}</strong></td>
+                            <td><code>${escapeHtml(column.column_type || column.data_type || '')}</code></td>
+                            <td>${column.is_nullable ? '<span class="sqlm-badge">YES</span>' : '<span class="text-danger fw-semibold">NO</span>'}</td>
+                            <td>${column.column_key ? `<span class="sqlm-badge">${escapeHtml(column.column_key)}</span>` : '-'}</td>
+                            <td>${column.default_value === null ? '<span class="sqlm-null">NULL</span>' : `<code>${escapeHtml(String(column.default_value))}</code>`}</td>
+                            <td>${column.extra ? `<code>${escapeHtml(column.extra)}</code>` : '-'}</td>
+                            <td>${column.column_comment ? escapeHtml(column.column_comment) : '<span class="text-secondary">-</span>'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        const indexesTable = indexes.length > 0 ? `
+            <table class="table admin-table sqlm-grid-table align-middle">
+                <thead><tr><th>Index</th><th>Columns</th><th>Unique</th><th>Type</th><th>Cardinality</th></tr></thead>
+                <tbody>
+                    ${indexes.map((index) => `
+                        <tr>
+                            <td><strong>${escapeHtml(index.name || '')}</strong></td>
+                            <td>${(index.columns || []).map((column) => `<code>${escapeHtml(column.name || '')}</code>`).join(' ')}</td>
+                            <td>${index.is_unique ? '<span class="sqlm-badge">YES</span>' : 'NO'}</td>
+                            <td>${escapeHtml(index.type || '-')}</td>
+                            <td>${escapeHtml(String(index.cardinality ?? '-'))}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        ` : '<div class="sqlm-empty">Bảng này chưa có index riêng ngoài metadata hệ thống.</div>';
+        const foreignKeysTable = foreignKeys.length > 0 ? `
+            <table class="table admin-table sqlm-grid-table align-middle">
+                <thead><tr><th>Constraint</th><th>Column</th><th>References</th><th>On update</th><th>On delete</th></tr></thead>
+                <tbody>
+                    ${foreignKeys.map((key) => `
+                        <tr>
+                            <td><strong>${escapeHtml(key.constraint_name || '')}</strong></td>
+                            <td><code>${escapeHtml(key.column_name || '')}</code></td>
+                            <td><code>${escapeHtml(key.referenced_table || '')}.${escapeHtml(key.referenced_column || '')}</code></td>
+                            <td>${escapeHtml(key.update_rule || '-')}</td>
+                            <td>${escapeHtml(key.delete_rule || '-')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        ` : '<div class="sqlm-empty">Không có foreign key trong bảng này.</div>';
+        const triggersTable = triggers.length > 0 ? `
+            <table class="table admin-table sqlm-grid-table align-middle">
+                <thead><tr><th>Trigger</th><th>Timing</th><th>Event</th><th>Statement</th><th>Created</th></tr></thead>
+                <tbody>
+                    ${triggers.map((trigger) => `
+                        <tr>
+                            <td><strong>${escapeHtml(trigger.name || '')}</strong></td>
+                            <td>${escapeHtml(trigger.timing || '-')}</td>
+                            <td>${escapeHtml(trigger.event || '-')}</td>
+                            <td><code>${escapeHtml(truncateCellText(trigger.statement || '', 160))}</code></td>
+                            <td>${escapeHtml(trigger.created_at || '-')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        ` : '<div class="sqlm-empty">Không có trigger trong bảng này.</div>';
+        const detailContent = focus === 'indexes'
+            ? indexesTable
+            : (focus === 'foreign_keys' ? foreignKeysTable : (focus === 'triggers' ? triggersTable : columnsTable));
 
         refs.structurePanel.innerHTML = `
             <div class="sqlm-structure-grid">
@@ -1064,41 +2126,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="sqlm-grid-card">
                     <div class="sqlm-grid-head">
                         <div>
-                            <strong>Columns</strong>
-                            <div class="small text-secondary">${context.columns.length} cột · hiển thị structure hiện có từ information_schema</div>
+                            <strong>${escapeHtml(focusTitle)}</strong>
+                            <div class="small text-secondary">Metadata lấy từ information_schema của bảng đang chọn.</div>
+                        </div>
+                        <div class="sqlm-structure-tabs">
+                            <button type="button" class="${focus === 'columns' ? 'is-active' : ''}" data-structure-focus="columns">Columns</button>
+                            <button type="button" class="${focus === 'indexes' ? 'is-active' : ''}" data-structure-focus="indexes">Indexes</button>
+                            <button type="button" class="${focus === 'foreign_keys' ? 'is-active' : ''}" data-structure-focus="foreign_keys">FKs</button>
+                            <button type="button" class="${focus === 'triggers' ? 'is-active' : ''}" data-structure-focus="triggers">Triggers</button>
                         </div>
                     </div>
                     <div class="sqlm-grid-wrap">
-                        <table class="table admin-table sqlm-grid-table align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Cột</th>
-                                    <th>Kiểu</th>
-                                    <th>Null</th>
-                                    <th>Key</th>
-                                    <th>Default</th>
-                                    <th>Extra</th>
-                                    <th>Comment</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${context.columns.map((column) => `
-                                    <tr>
-                                        <td><strong>${escapeHtml(column.name)}</strong></td>
-                                        <td><code>${escapeHtml(column.column_type || column.data_type || '')}</code></td>
-                                        <td>${column.is_nullable ? '<span class="sqlm-badge">YES</span>' : '<span class="text-danger fw-semibold">NO</span>'}</td>
-                                        <td>${column.column_key ? `<span class="sqlm-badge">${escapeHtml(column.column_key)}</span>` : '-'}</td>
-                                        <td>${column.default_value === null ? '<span class="sqlm-null">NULL</span>' : `<code>${escapeHtml(String(column.default_value))}</code>`}</td>
-                                        <td>${column.extra ? `<code>${escapeHtml(column.extra)}</code>` : '-'}</td>
-                                        <td>${column.column_comment ? escapeHtml(column.column_comment) : '<span class="text-secondary">-</span>'}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                        ${detailContent}
                     </div>
                 </div>
             </div>
         `;
+
+        refs.structurePanel.querySelectorAll('[data-structure-focus]').forEach((button) => {
+            button.addEventListener('click', () => {
+                state.structureFocus = button.getAttribute('data-structure-focus') || 'columns';
+                renderStructurePanel();
+                renderTableList();
+            });
+        });
+
+        applyStandaloneGridWidths(refs.structurePanel);
     }
 
     function renderQueryPanel() {
@@ -1155,6 +2208,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `;
+
+        applyStandaloneGridWidths(refs.queryPanel);
     }
 
     function renderSearchPanel() {
@@ -1224,33 +2279,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderExportPanel() {
         const context = state.context;
-        if (!context) {
-            refs.exportPanel.innerHTML = '<div class="sqlm-empty">Chọn bảng trước khi export.</div>';
-            return;
-        }
+        const selectedTable = context ? context.table : state.selectedTable;
+        const totalRows = context && context.pagination ? Number(context.pagination.total || 0) : 0;
 
         refs.exportPanel.innerHTML = `
             <div class="sqlm-mode-shell-grid">
                 <section class="sqlm-shell-card">
                     <div class="sqlm-shell-card-head">
                         <h3 class="sqlm-panel-title">Export current page</h3>
-                        <p class="sqlm-panel-subtitle">Backend hiện hỗ trợ export CSV cho dataset đang hiển thị trên grid.</p>
+                        <p class="sqlm-panel-subtitle">CSV nhanh cho dataset đang hiển thị trên grid.</p>
                     </div>
                     <div class="sqlm-shell-actions">
-                        <button type="button" class="btn btn-primary" data-sqlm-action="export">Export CSV</button>
+                        <button type="button" class="btn btn-primary" data-sqlm-action="export" ${context ? '' : 'disabled'}>Export CSV</button>
                         <button type="button" class="btn btn-light border" data-sqlm-action="chart">Create chart</button>
                     </div>
-                    <div class="sqlm-shell-note">${escapeHtml(String(context.pagination.total || 0))} bản ghi trong bảng, export theo trang hiện tại.</div>
+                    <div class="sqlm-shell-note">${escapeHtml(String(totalRows))} bản ghi trong bảng hiện tại. CSV chỉ export trang đang xem.</div>
                 </section>
-                <section class="sqlm-shell-card is-disabled">
+                <section class="sqlm-shell-card">
                     <div class="sqlm-shell-card-head">
-                        <h3 class="sqlm-panel-title">Export nâng cao</h3>
-                        <p class="sqlm-panel-subtitle">SQL dump, schema only, compressed export chưa có backend.</p>
+                        <h3 class="sqlm-panel-title">SQL dump cho phpMyAdmin</h3>
+                        <p class="sqlm-panel-subtitle">File .sql có DROP TABLE IF EXISTS, CREATE TABLE, INSERT data và FOREIGN_KEY_CHECKS=0.</p>
                     </div>
                     <div class="sqlm-shell-actions">
-                        <button type="button" class="btn btn-light border" disabled>Dump schema</button>
-                        <button type="button" class="btn btn-light border" disabled>Dump data</button>
+                        <button type="button" class="btn btn-primary" data-sqlm-action="export-sql-full">Full database .sql</button>
+                        <button type="button" class="btn btn-light border" data-sqlm-action="export-sql-table" ${selectedTable ? '' : 'disabled'}>Current table .sql</button>
+                        <button type="button" class="btn btn-light border" data-sqlm-action="export-sql-schema">Schema only</button>
+                        <button type="button" class="btn btn-light border" data-sqlm-action="export-sql-data">Data only</button>
                     </div>
+                    <div class="sqlm-shell-note">Dùng "Full database .sql" khi import lên phpMyAdmin để tránh lỗi #1050 table already exists. File này sẽ DROP bảng trùng tên trong database đích trước khi tạo lại. Data only dùng REPLACE INTO để giảm lỗi duplicate key.</div>
                 </section>
             </div>
         `;
@@ -1377,6 +2433,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = await requestJson(`${endpoints.tableData}?${params.toString()}`);
             state.context = decorateContext(payload.context || null);
             state.selectedTable = state.context ? state.context.table : tableName;
+            state.expandedTables[state.selectedTable] = true;
+            loadColumnWidths();
             state.selectedRowIndex = null;
             state.cellPreview = {
                 rowIndex: null,
@@ -1860,6 +2918,7 @@ document.addEventListener('DOMContentLoaded', () => {
         refs.filterRow.classList.toggle('d-none', !['data', 'search'].includes(tabName));
         app.setAttribute('data-sqlm-active-tab', tabName);
         updateToolbarMeta();
+        window.requestAnimationFrame(refreshGridWidths);
     }
 
     function focusFilter() {
@@ -2175,6 +3234,95 @@ document.addEventListener('DOMContentLoaded', () => {
         showFlash('Đã export dữ liệu trang hiện tại sang CSV.', 'success');
     }
 
+    function filenameFromDisposition(disposition, fallback) {
+        if (!disposition) {
+            return fallback;
+        }
+
+        const utfMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utfMatch && utfMatch[1]) {
+            try {
+                return decodeURIComponent(utfMatch[1].replace(/"/g, ''));
+            } catch (error) {
+                return utfMatch[1].replace(/"/g, '');
+            }
+        }
+
+        const match = disposition.match(/filename="?([^"]+)"?/i);
+        return match && match[1] ? match[1] : fallback;
+    }
+
+    async function downloadSqlDump(options = {}) {
+        if (!endpoints.exportSql) {
+            showFlash('Chưa cấu hình endpoint export SQL.', 'danger');
+            return;
+        }
+
+        const params = new URLSearchParams();
+        params.set('_csrf', state.csrfToken);
+        params.set('scope', options.scope || 'database');
+        params.set('table', options.table || '');
+        params.set('include_schema', options.includeSchema === false ? '0' : '1');
+        params.set('include_data', options.includeData === false ? '0' : '1');
+        params.set('add_drop', options.addDrop === false ? '0' : '1');
+        params.set('insert_mode', options.insertMode || 'INSERT');
+
+        try {
+            showFlash('Đang tạo file SQL dump...', 'info');
+            const response = await fetch(endpoints.exportSql, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/sql, application/json;q=0.9',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-CSRF-TOKEN': state.csrfToken,
+                },
+                body: params.toString(),
+            });
+
+            const nextToken = response.headers.get('X-CSRF-TOKEN');
+            if (nextToken) {
+                state.csrfToken = nextToken;
+            }
+
+            const contentType = response.headers.get('Content-Type') || '';
+            const isSqlDownload = contentType.includes('application/sql')
+                || contentType.includes('application/octet-stream')
+                || contentType.includes('text/plain');
+            if (!response.ok || contentType.includes('application/json') || !isSqlDownload) {
+                const text = await response.text();
+                let payload = null;
+                try {
+                    payload = JSON.parse(text);
+                } catch (error) {
+                    throw new Error('Export SQL thất bại hoặc phiên admin đã hết hạn.');
+                }
+
+                if (payload && payload.csrf_token) {
+                    state.csrfToken = payload.csrf_token;
+                }
+
+                throw new Error(payload && payload.message ? payload.message : 'Export SQL thất bại.');
+            }
+
+            const blob = await response.blob();
+            const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const fallback = `zenoxdigital-${stamp}.sql`;
+            const filename = filenameFromDisposition(response.headers.get('Content-Disposition'), fallback);
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = filename;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            window.URL.revokeObjectURL(url);
+            showFlash('Đã tải file SQL. Khi import phpMyAdmin, chọn file này và chạy trực tiếp.', 'success');
+        } catch (error) {
+            showFlash(error.message || 'Export SQL thất bại.', 'danger');
+        }
+    }
+
     function generatedValueForColumn(column, rowNumber) {
         const name = String(column.name || '').toLowerCase();
         const type = String(column.data_type || column.column_type || '').toLowerCase();
@@ -2329,6 +3477,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (refs.explorerToggleBtn) {
+        refs.explorerToggleBtn.addEventListener('click', () => {
+            state.explorerCollapsed = !state.explorerCollapsed;
+            updateToolbarMeta();
+        });
+    }
+
+    if (refs.explorerSplitter) {
+        refs.explorerSplitter.addEventListener('pointerdown', startExplorerResize);
+        refs.explorerSplitter.addEventListener('dblclick', () => {
+            state.explorerWidth = 286;
+            applyExplorerWidth();
+            window.localStorage.setItem('sqlm:explorerWidth', '286');
+        });
+    }
+
+    document.addEventListener('click', closeContextMenu);
+    document.addEventListener('keydown', moveCellByArrow);
+
     app.addEventListener('click', (event) => {
         const actionTrigger = event.target.closest('[data-sqlm-action]');
         if (!actionTrigger) {
@@ -2348,6 +3515,43 @@ document.addEventListener('DOMContentLoaded', () => {
             refs.generateBtn.click();
         } else if (action === 'export') {
             refs.exportBtn.click();
+        } else if (action === 'export-sql-full') {
+            downloadSqlDump({
+                scope: 'database',
+                includeSchema: true,
+                includeData: true,
+                addDrop: true,
+                insertMode: 'INSERT',
+            });
+        } else if (action === 'export-sql-table') {
+            downloadSqlDump({
+                scope: 'table',
+                table: state.context ? state.context.table : state.selectedTable,
+                includeSchema: true,
+                includeData: true,
+                addDrop: true,
+                insertMode: 'INSERT',
+            });
+        } else if (action === 'export-sql-schema') {
+            downloadSqlDump({
+                scope: 'database',
+                includeSchema: true,
+                includeData: false,
+                addDrop: true,
+                insertMode: 'INSERT',
+            });
+        } else if (action === 'export-sql-data') {
+            downloadSqlDump({
+                scope: 'database',
+                includeSchema: false,
+                includeData: true,
+                addDrop: false,
+                insertMode: 'REPLACE',
+            });
+        } else if (action === 'auto-fit-columns') {
+            autoFitAllColumns();
+        } else if (action === 'reset-column-widths') {
+            resetColumnWidths();
         } else if (action === 'chart') {
             refs.chartBtn.click();
         } else if (action === 'import') {
@@ -2430,6 +3634,10 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTable(state.selectedTable, { page: currentPage + 1 });
     });
 
+    window.addEventListener('resize', () => {
+        window.requestAnimationFrame(refreshGridWidths);
+    });
+
     if (chartModalElement) {
         chartModalElement.addEventListener('hidden.bs.modal', () => {
             if (state.chartInstance) {
@@ -2440,6 +3648,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     state.context = decorateContext(bootstrapData.context || null);
+    if (state.selectedTable) {
+        state.expandedTables[state.selectedTable] = true;
+    }
+    loadColumnWidths();
+    applyExplorerWidth();
     if (refs.queryInput && !refs.queryInput.value.trim() && state.selectedTable) {
         setDefaultQuery();
     }

@@ -1,644 +1,137 @@
 # ZenoxDigital
 
-[Tiếng Việt](#tiếng-việt) | [English](#english)
+ZenoxDigital là dự án webshop dịch vụ số theo hướng cloud hosting, xây dựng bằng PHP MVC thuần, PDO, Bootstrap 5 và JavaScript thuần. Repo này được dùng để học lập trình nghiêm túc, làm tài liệu đối chiếu khi phát triển đồ án, và làm nền tảng thực hành triển khai hệ thống thực tế.
 
----
+> Đây không phải landing page demo đơn giản. Dự án có storefront, backoffice, ví điện tử, quản trị dữ liệu, bảo mật, AI chatbot/Copilot, SQL Manager và các tài liệu triển khai AI đi kèm.
 
-## Tiếng Việt
+## Mục Tiêu
 
-## 1. Tổng quan dự án
+- Học cách xây dựng sản phẩm web hoàn chỉnh bằng PHP MVC.
+- Hiểu luồng dữ liệu từ route, controller, model, view đến database.
+- Thực hành quản trị sản phẩm, đơn hàng, user, coupon, feedback và cấu hình hệ thống.
+- Tích hợp AI vào sản phẩm theo hướng có kiểm soát, không bịa dữ liệu.
+- Có nền tảng để phát triển thành đồ án hoặc portfolio kỹ thuật.
 
-**ZenoxDigital** là một webshop dịch vụ số theo định hướng cloud-first, xây dựng trên:
-
-- PHP MVC (custom)
-- PDO (MySQL/MariaDB)
-- Bootstrap 5
-- JavaScript thuần (`public/assets/js`)
-
-Mục tiêu của dự án:
-
-1. **Học thuật / đồ án**: có kiến trúc, module nghiệp vụ, bảo mật, tích hợp AI có guardrail.
-2. **Portfolio xin việc**: thể hiện năng lực backend + frontend + tích hợp dịch vụ ngoài + AI workflow.
-3. **Nền tảng mở rộng**: có tổ chức service/module rõ ràng để phát triển tiếp.
-
----
-
-## 2. Các phân hệ chính
-
-### 2.1 Storefront (khách hàng)
-
-- Danh mục và sản phẩm dịch vụ số
-- Tìm kiếm, lọc, chi tiết sản phẩm
-- Đăng ký/đăng nhập, hồ sơ, lịch sử đơn
-- Ví điện tử và giao dịch
-- Widget AI Meow cho hỗ trợ khách
-
-### 2.2 Backoffice/Admin
-
-- Dashboard KPI vận hành
-- Quản lý: products, categories, orders, users, coupons, feedback, settings
-- Theo dõi thanh toán ví (SePay flow)
-- Audit log, SQL Manager, health guard
-- Meow Copilot cho admin/staff
-
-### 2.3 Bảo mật và governance
-
-- CSRF token
-- Rate limiting (auth, AI endpoints, feedback)
-- Session tracking
-- 2FA (TOTP + backup codes)
-- Role/scope-based access control
-- Admin audit log
-
----
-
-## 3. AI trong ZenoxDigital: làm được gì và hoạt động ra sao
-
-## 3.1 Mục tiêu AI
-
-AI trong repo này là trợ lý vận hành có kiểm soát, **không phải AI tự quyết toàn bộ hệ thống**.
-
-Nguyên tắc cốt lõi:
-
-- Không bịa số liệu
-- Không bỏ qua phân quyền backend
-- Không thực hiện mutation nguy hiểm nếu chưa qua xác nhận
-- Khi thiếu dữ liệu thì trả lời rõ đang thiếu gì
-
-## 3.2 Luồng AI cho khách (Customer Widget)
-
-**UI**:
-
-- Widget nổi ở layout chính
-- File giao diện: `app/Views/partials/ai_chat_widget.php`
-- JS/CSS: `public/assets/js/ai-chat-widget.js`, `public/assets/css/ai-chat-widget.css`
-
-**API**:
-
-- `POST /ai/chat/customer`
-- `POST /ai/feedback/customer`
-
-**Khả năng chính**:
-
-- FAQ
-- Tư vấn chọn sản phẩm cơ bản
-- Gợi ý hướng mua hàng
-- Hỗ trợ feedback sau mua
-- Hỗ trợ tra cứu đơn/tài khoản trong phạm vi an toàn
-
-## 3.3 Luồng AI cho admin (Meow Copilot)
-
-**UI**:
-
-- Panel trong admin layout
-- File giao diện: `app/Views/partials/admin_ai_panel.php`
-- JS/CSS: `public/assets/js/admin-ai-panel.js`, `public/assets/css/admin-ai-panel.css`
-
-**API**:
-
-- `POST /admin/ai/chat`
-- `GET /admin/ai/summary`
-- `GET /admin/ai/session`
-- `GET /admin/ai/progress`
-
-**Khả năng chính**:
-
-- Tóm tắt dashboard
-- Trả lời nhanh các intent vận hành (đơn pending, feedback, coupon, top sản phẩm)
-- Gợi ý bán hàng/khuyến mãi mức sơ bộ
-- Gợi ý capacity/restock khi dữ liệu đủ
-- Mutation guardrail theo vòng đời `preview -> confirm -> execute`
-
-## 3.4 Các service AI cốt lõi
-
-- `AiBridgeService`: gọi bridge AI, retry/fallback
-- `AiContextBuilder`: build context theo actor/scope
-- `AiGuardService`: guardrail dữ liệu + capability/scope
-- `AdminAiIntentService`: intent routing cho admin
-- `AiSalesRecommendationService`: recommendation (push/upsell/promotion/capacity)
-- `AdminAiSessionService`, `AdminAiProgressService`: session/progress tracking
-
-## 3.5 Cơ chế AI runtime thực tế
-
-ZenoxDigital **không tự chạy model AI bên trong repo PHP này**.  
-Repo này đóng vai trò:
-
-1. Render UI cho khách/admin
-2. Xây context và guardrail ở backend PHP
-3. Gọi sang một **AI bridge/service bên ngoài** qua HTTP JSON
-4. Nhận kết quả, chuẩn hóa response rồi trả về widget/panel
-
-Luồng thực tế:
-
-1. Người dùng chat ở widget khách hoặc Meow Copilot admin
-2. JS gọi route PHP:
-   - `POST /ai/chat/customer`
-   - `POST /admin/ai/chat`
-3. Controller build context phù hợp actor/quyền hiện tại
-4. `AiBridgeService` gửi payload sang `AI_BRIDGE_URL`
-5. AI bridge trả lời
-6. ZenoxDigital đóng gói kết quả và render lại trên giao diện
-
-Cấu hình local hiện tại của repo đang hướng tới bridge:
-
-```env
-AI_PROVIDER=zia-bot-bridge
-AI_BRIDGE_URL=http://127.0.0.1:10001/api/web-chat
-```
-
-Trong môi trường dev hiện tại, bridge này thường được cung cấp bởi service companion **`Bot-Local`** chạy riêng ở ngoài repo ZenoxDigital.
-
-## 3.6 Fallback mode và cách hiểu đúng
-
-Để frontend và flow end-to-end vẫn test được khi bridge ngoài chưa bật, `AiBridgeService` có cơ chế fallback an toàn.
-
-Nếu:
-
-- AI bị tắt
-- `AI_BRIDGE_URL` chưa cấu hình
-- bridge đang down / timeout / từ chối kết nối
-
-thì hệ thống có thể trả về `local-fallback` nếu:
-
-```env
-AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
-```
-
-Khi đó:
-
-- Widget/panel **vẫn hoạt động**
-- Nhưng câu trả lời chỉ là fallback nội bộ, không phải AI bridge thật
-- Đây là chế độ để test UI, route, session, rate-limit và guardrail, không phải production AI thật
-
----
-
-## 4. Chi tiết phase AI (roadmap + trạng thái)
-
-| Phase | Nội dung | Trạng thái hiện tại | Ghi chú triển khai |
-|---|---|---|---|
-| 0 | Hạ tầng AI (bridge/context/guard/routes/widget skeleton) | DONE | Đã có service nền và wiring public/admin |
-| 1 | Chatbot CSKH cho storefront | DONE | Widget public hoạt động, có session + prompt profile |
-| 2 | Feedback và hỗ trợ sau bán | DONE | Có capture feedback thật + admin xem feedback |
-| 3 | Tra cứu đơn hàng/tài khoản | DONE | Có ownership guard ở backend |
-| 4 | Admin AI Copilot dashboard | DONE | Có session persistence + progress + direct intent |
-| 5 | Gợi ý bán hàng/khuyến mãi | DONE (mức sơ bộ) | Có push/upsell/promotion/coupon action, vẫn tôn trọng data gaps |
-| 6 | Phân tích bán chậm/tồn/capacity | PARTIAL | Đã có schema + intent + recommendation; chất lượng phụ thuộc dữ liệu nhập thật |
-| 7 | Guardrail lợi nhuận, không lỗ | PARTIAL | Đã có guardrail và field checks; cần dữ liệu vận hành đầy đủ để tính chuẩn |
-| 8 | Báo cáo điều hành + action plan | ROADMAP | Chưa hoàn tất full pipeline |
-
-## 4.1 Điều kiện dữ liệu cho Phase 6/7
-
-Các cột trọng yếu trong `products`:
-
-- `product_type`
-- `stock_qty`
-- `capacity_limit`
-- `capacity_used`
-- `reorder_point`
-- `supplier_name`
-- `lead_time_days`
-- `cost_price`
-- `min_margin_percent`
-- `platform_fee_percent`
-- `payment_fee_percent`
-- `ads_cost_per_order`
-- `delivery_cost`
-
-Nếu thiếu cột hoặc cột chưa có dữ liệu vận hành, AI sẽ trả warning/refusal tương ứng.
-
----
-
-## 5. Cách sử dụng AI chi tiết
-
-## 5.1 Dùng AI cho khách
-
-1. Mở trang chủ hoặc trang sản phẩm.
-2. Bấm mở widget Meow.
-3. Chọn prompt nhanh hoặc nhập câu hỏi.
-4. Có thể gửi feedback ngay trong widget.
-5. Nếu cần reset phiên, dùng nút reset trong widget.
-
-Ví dụ câu hỏi:
-
-- "Có gói VPS nào phù hợp web nhỏ?"
-- "Đơn ORD-xxxx của tôi đang ở đâu?"
-- "Mình muốn góp ý về tốc độ bàn giao"
-
-## 5.2 Dùng AI cho admin
-
-1. Đăng nhập backoffice và mở `/admin`.
-2. Mở Meow Copilot từ dashboard.
-3. Đặt câu hỏi theo intent vận hành.
-4. Với thao tác thay đổi dữ liệu, kiểm tra preview trước khi confirm.
-
-Ví dụ câu hỏi:
-
-- "Xem nhanh đơn pending hôm nay"
-- "Top sản phẩm nào đang bán chạy?"
-- "Coupon hiện tại thế nào?"
-- "Có cảnh báo nhập hàng/capacity nào không?"
-
-## 5.3 Cách kiểm tra đang dùng AI thật hay fallback
-
-Sau khi chat, response JSON của hệ thống sẽ có metadata để phân biệt:
-
-**Nếu đang chạy AI bridge thật**:
-
-- `provider=zia-bot-bridge` (hoặc tên provider do bridge trả về)
-- `is_fallback=false`
-- `mode=real_bridge`
-
-**Nếu đang fallback**:
-
-- `provider=local-fallback`
-- `is_fallback=true`
-- `mode=fallback`
-
-Điều này giúp debug nhanh xem vấn đề đang nằm ở:
-
-- UI/frontend
-- route/controller PHP
-- hay service bridge ngoài chưa chạy
-
----
-
-## 6. Cấu hình và chạy local
-
-## 6.1 Yêu cầu
+## Công Nghệ
 
 - PHP 8.x
-- MySQL/MariaDB
-- Apache (XAMPP/Laragon)
-
-## 6.2 Cài đặt
-
-```bash
-git clone https://github.com/EmBeHocCode/ZenoDigital.git
-cd ZenoDigital
-```
-
-1. Tạo `.env` từ `.env.example`.
-2. Cấu hình `APP_URL`, `DB_*`.
-3. Import `database/schema.sql`.
-4. Với DB cũ, chạy thêm:
-   - `database/20260422_add_phase67_product_columns.sql`
-5. Truy cập:
-   - `http://localhost/ZenoxDigital/public`
-
-## 6.3 Cấu hình AI bridge
-
-Trong `.env` (ví dụ):
-
-```env
-AI_ENABLED=true
-AI_PROVIDER=zia-bot-bridge
-AI_BRIDGE_URL=http://127.0.0.1:10001/api/web-chat
-AI_BRIDGE_KEY=your-secret
-AI_CHAT_TIMEOUT=20
-AI_BRIDGE_RETRIES=1
-AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
-```
-
-## 6.4 Chạy AI bridge thật ở local
-
-Nếu bạn muốn chatbot trên web dùng **AI thật**, ngoài Apache/MySQL cho ZenoxDigital, bạn còn phải chạy service bridge bên ngoài.
-
-Với setup dev hiện tại, service đó là companion repo `Bot-Local` chạy ở port `10001`.
-
-Ví dụ:
-
-```bash
-cd E:\ZALO-BotChat
-bun run dev:bot
-```
-
-Hoặc:
-
-```bash
-cd E:\ZALO-BotChat
-bun run --cwd apps/bot dev
-```
-
-Lưu ý:
-
-- Repo bot này **không nằm trong** repo ZenoxDigital
-- Trong máy dev hiện tại, repo `Bot-Local` đang được đặt tại `E:\ZALO-BotChat`
-- Nó cần được chạy riêng
-- Nếu bridge chưa chạy, ZenoxDigital vẫn có thể trả `local-fallback` để test UI
-- Nếu bridge chạy đúng, chatbot web sẽ chuyển sang `real_bridge`
-
-## 6.5 Checklist chạy AI end-to-end
-
-1. Bật Apache + MySQL cho ZenoxDigital
-2. Kiểm tra `.env` của ZenoxDigital có `AI_BRIDGE_URL` đúng
-3. Chạy AI bridge/service ngoài ở port phù hợp
-4. Mở `http://localhost/ZenoxDigital/public`
-5. Chat thử ở widget khách hoặc admin panel
-6. Kiểm tra metadata response để xác nhận `real_bridge` hay `fallback`
-
----
-
-## 7. Lộ trình phát triển (giai đoạn tiếp theo)
-
-## Giai đoạn A - Data quality hardening
-
-- Hoàn thiện dữ liệu thật cho các cột phase 6/7
-- Thêm cảnh báo nhập liệu thiếu ở admin products
-- Chuẩn hóa dữ liệu lead time/supplier/cost
-
-## Giai đoạn B - Phase 6/7 production-ready
-
-- Tăng độ chính xác capacity alert
-- Chuẩn hóa rule lợi nhuận theo từng loại sản phẩm
-- Bổ sung kiểm thử service-level cho recommendation/guardrail
-
-## Giai đoạn C - Phase 8
-
-- Executive report ngày/tuần
-- Action queue tự động theo ưu tiên
-- Checklist hành động cho vận hành
-
----
-
-## 8. Phù hợp cho học thuật, xin việc, đồ án
-
-### 8.1 Học thuật/đồ án
-
-- Có hệ thống đa actor (guest/customer/staff/admin)
-- Có module nghiệp vụ + bảo mật + tích hợp payment + AI guardrail
-- Dễ chuyển thành báo cáo kiến trúc và demo flow
-
-### 8.2 Xin việc/portfolio
-
-- Thể hiện full-stack triển khai thực tế
-- Có quy tắc an toàn AI thay vì chatbot demo thuần
-- Có tổ chức service/controller rõ ràng, dễ review code
-
----
-
-## 9. Tài liệu liên quan
-
-- `docs/AI_PORTING_GUIDE.md`
-- `docs/AI_IMPLEMENTATION_STATUS.md`
-- `docs/AI_FEATURE_PHASES_CHECKLIST.md`
-- `docs/README_AI.md`
-
----
-
-## 10. License
-
-MIT - xem `LICENSE`.
-
----
-
-## English
-
-## 1. Project overview
-
-**ZenoxDigital** is a cloud-first digital services webshop built with:
-
-- Custom PHP MVC
-- PDO (MySQL/MariaDB)
+- MySQL hoặc MariaDB
+- PDO
 - Bootstrap 5
-- Vanilla JavaScript
+- JavaScript thuần
+- Apache/XAMPP hoặc VPS Ubuntu + Apache/Nginx
+- AI bridge bên ngoài qua HTTP JSON
 
-Project goals:
+## Tính Năng Chính
 
-1. **Academic/capstone** usage
-2. **Job portfolio** showcasing practical full-stack engineering
-3. **Extensible codebase** for future development
+### Storefront
 
----
+- Trang chủ ZenoDigital với hero banner/slider.
+- Danh sách sản phẩm dịch vụ số/cloud/VPS.
+- Trang chi tiết sản phẩm.
+- Đăng ký, đăng nhập, hồ sơ người dùng.
+- Ví điện tử và lịch sử giao dịch.
+- Checkout sản phẩm.
+- Feedback nhanh từ header và widget AI.
 
-## 2. Main modules
+### Admin Backoffice
 
-### 2.1 Storefront
+- Dashboard quản trị.
+- Quản lý sản phẩm.
+- Quản lý danh mục.
+- Quản lý banner trang chủ.
+- Quản lý đơn hàng.
+- Quản lý người dùng.
+- Quản lý coupon.
+- Quản lý rank/chương trình thưởng.
+- Quản lý feedback khách hàng.
+- Quản lý thanh toán/ví.
+- Cài đặt hệ thống.
+- Audit log.
+- SQL Manager.
 
-- Digital service catalog and product detail pages
-- Auth/profile/order history
-- Wallet and transactions
-- Customer AI widget
+### SQL Manager
 
-### 2.2 Backoffice/Admin
+SQL Manager được thiết kế giống database client hiện đại:
 
-- KPI dashboard
-- Product/category/order/user/coupon/feedback/settings management
-- Payment and wallet monitoring
-- Audit log + SQL Manager + health guards
-- Admin AI Copilot
+- Database Explorer dạng tree.
+- Browse dữ liệu bảng.
+- Structure/columns/indexes/foreign keys/triggers.
+- SQL console read-only cho truy vấn an toàn.
+- Import SQL/CSV/JSON.
+- Export SQL tương thích phpMyAdmin.
+- Inline edit cell giống Navicat/TablePlus.
+- Resize columns và resize panel.
+- Scroll ngang/dọc riêng trong workspace.
+- Tool sửa lỗi mojibake tiếng Việt trong database.
 
-### 2.3 Security
+Tool sửa dữ liệu lỗi font:
 
-- CSRF protection
-- Rate limiting
-- Session tracking
-- 2FA (TOTP + backup codes)
-- Role/scope-based access control
+```bash
+C:\xampp\php\php.exe tools\repair_db_mojibake.php
+C:\xampp\php\php.exe tools\repair_db_mojibake.php --fix
+```
 
----
+## AI Trong Dự Án
 
-## 3. AI capabilities and architecture
+AI trong ZenoxDigital là lớp trợ lý có guardrail, không thay backend permission và không tự suy đoán dữ liệu thiếu.
 
-## 3.1 AI scope
+### Customer AI Widget
 
-The AI layer is operationally useful but constrained by guardrails.  
-It does **not** bypass permissions and does **not** fabricate missing data.
+File chính:
 
-## 3.2 Customer AI flow
-
-UI:
-
+- `app/Controllers/AiController.php`
+- `app/Services/AiBridgeService.php`
+- `app/Services/AiContextBuilder.php`
+- `app/Services/AiGuardService.php`
 - `app/Views/partials/ai_chat_widget.php`
 - `public/assets/js/ai-chat-widget.js`
 - `public/assets/css/ai-chat-widget.css`
 
-APIs:
+Route:
 
 - `POST /ai/chat/customer`
 - `POST /ai/feedback/customer`
 
-Core abilities:
+Khả năng:
 
-- FAQ and product guidance
-- Basic order/account support in safe scope
-- Feedback capture
+- Trả lời FAQ cơ bản.
+- Tư vấn sản phẩm.
+- Nhận feedback.
+- Hỗ trợ tra cứu đơn/tài khoản trong phạm vi an toàn.
 
-## 3.3 Admin AI flow
+### Admin Meow Copilot
 
-UI:
+File chính:
 
+- `app/Controllers/Admin/AiController.php`
+- `app/Services/AdminAiIntentService.php`
+- `app/Services/AdminAiMutationService.php`
+- `app/Services/AdminAiSessionService.php`
 - `app/Views/partials/admin_ai_panel.php`
 - `public/assets/js/admin-ai-panel.js`
 - `public/assets/css/admin-ai-panel.css`
 
-APIs:
+Route:
 
 - `POST /admin/ai/chat`
 - `GET /admin/ai/summary`
 - `GET /admin/ai/session`
 - `GET /admin/ai/progress`
 
-Core abilities:
+Khả năng:
 
-- Dashboard summaries
-- Fast intent responses
-- Preliminary sales/coupon recommendations
-- Capacity/restock insights when data is sufficient
-- Guarded mutation lifecycle: `preview -> confirm -> execute`
+- Tóm tắt dashboard.
+- Xem đơn pending, feedback, coupon, sản phẩm.
+- Gợi ý bán hàng/khuyến mãi có guardrail.
+- Gợi ý capacity/restock khi dữ liệu đủ.
+- Mutation theo luồng `preview -> confirm -> execute`.
 
-## 3.4 Core AI services
+### AI Bridge
 
-- `AiBridgeService`
-- `AiContextBuilder`
-- `AiGuardService`
-- `AdminAiIntentService`
-- `AiSalesRecommendationService`
-- `AdminAiSessionService`
-- `AdminAiProgressService`
+Repo PHP này không chạy model AI trực tiếp. ZenoxDigital build context và gọi sang AI bridge bên ngoài qua `AI_BRIDGE_URL`.
 
-## 3.5 Real AI runtime mechanism
-
-ZenoxDigital does **not** host the actual AI model inside this PHP repository.  
-This repository is responsible for:
-
-1. Rendering customer/admin UI
-2. Building scoped backend context and guardrails
-3. Calling an **external AI bridge/service** over HTTP JSON
-4. Normalizing the response back into the widget/copilot UI
-
-Actual runtime flow:
-
-1. A user sends a message from the storefront widget or admin copilot
-2. JavaScript calls the PHP route:
-   - `POST /ai/chat/customer`
-   - `POST /admin/ai/chat`
-3. The controller builds actor-aware context
-4. `AiBridgeService` sends the request to `AI_BRIDGE_URL`
-5. The external bridge returns an answer
-6. ZenoxDigital wraps the result and renders it in the UI
-
-The current local setup is wired like this:
-
-```env
-AI_PROVIDER=zia-bot-bridge
-AI_BRIDGE_URL=http://127.0.0.1:10001/api/web-chat
-```
-
-In the current development workflow, that bridge is typically provided by a separate companion service named **`Bot-Local`**.
-
-## 3.6 Fallback mode
-
-`AiBridgeService` can safely fall back when the external bridge is unavailable.
-
-Typical fallback cases:
-
-- AI is disabled
-- `AI_BRIDGE_URL` is missing
-- the bridge is down / timing out / refusing connections
-
-If this is enabled:
-
-```env
-AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
-```
-
-then the UI still works, but the response comes from `local-fallback`, not from the real bridge.  
-This is useful for testing UI/routes/session flow, but it should not be confused with the production AI path.
-
----
-
-## 4. Detailed AI phase status
-
-| Phase | Scope | Current status | Notes |
-|---|---|---|---|
-| 0 | AI infrastructure | DONE | Core bridge/context/guard wiring is in place |
-| 1 | Storefront chatbot | DONE | Public widget + customer chat route active |
-| 2 | Feedback support | DONE | Real feedback persistence and admin visibility |
-| 3 | Order/account support | DONE | Ownership-safe support flow |
-| 4 | Admin Copilot | DONE | Session persistence + progress + direct intents |
-| 5 | Sales/promo suggestions | DONE (preliminary) | Works with guardrails and data-gap notes |
-| 6 | Slow-moving/capacity analysis | PARTIAL | Schema + intent + recommendation wiring done; quality depends on real data |
-| 7 | Profit-safe guardrails | PARTIAL | Guard checks implemented; requires complete operational finance data |
-| 8 | Executive action planning | ROADMAP | Not fully implemented yet |
-
-### 4.1 Data prerequisites (Phase 6/7)
-
-Required product fields:
-
-- `product_type`, `stock_qty`, `capacity_limit`, `capacity_used`
-- `reorder_point`, `supplier_name`, `lead_time_days`
-- `cost_price`, `min_margin_percent`, `platform_fee_percent`, `payment_fee_percent`, `ads_cost_per_order`, `delivery_cost`
-
-If fields are missing or operationally empty, AI will warn/refuse instead of guessing.
-
----
-
-## 5. How to use AI
-
-## 5.1 Customer usage
-
-1. Open home/product pages.
-2. Launch Meow widget.
-3. Ask FAQ/product/order/account questions.
-4. Submit post-purchase feedback if needed.
-
-## 5.2 Admin usage
-
-1. Login and open `/admin`.
-2. Open Meow Copilot.
-3. Ask operational prompts (pending orders, top products, coupons, capacity).
-4. For mutations, use preview then confirmation flow.
-
-## 5.3 How to verify real AI vs fallback
-
-Each AI response includes metadata you can inspect:
-
-**Real bridge mode**:
-
-- `provider=zia-bot-bridge` (or the provider name returned by the bridge)
-- `is_fallback=false`
-- `mode=real_bridge`
-
-**Fallback mode**:
-
-- `provider=local-fallback`
-- `is_fallback=true`
-- `mode=fallback`
-
-This helps determine whether an issue is in:
-
-- the frontend UI
-- the PHP routes/controllers
-- or the external bridge service
-
----
-
-## 6. Local setup
-
-Requirements:
-
-- PHP 8.x
-- MySQL/MariaDB
-- Apache (XAMPP/Laragon)
-
-Setup:
-
-```bash
-git clone https://github.com/EmBeHocCode/ZenoDigital.git
-cd ZenoDigital
-```
-
-1. Create `.env` from `.env.example`
-2. Configure app + DB settings
-3. Import `database/schema.sql`
-4. For existing DBs, run migration:
-   - `database/20260422_add_phase67_product_columns.sql`
-5. Open:
-   - `http://localhost/ZenoxDigital/public`
-
-## 6.1 AI bridge configuration
-
-In `.env`:
+Cấu hình mẫu:
 
 ```env
 AI_ENABLED=true
@@ -648,86 +141,287 @@ AI_BRIDGE_KEY=your-secret
 AI_CHAT_TIMEOUT=20
 AI_BRIDGE_RETRIES=1
 AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
+AI_CUSTOMER_SESSION_PREFIX=customer-web
+AI_ADMIN_SESSION_PREFIX=admin-dashboard
 ```
 
-## 6.2 Running the real AI bridge locally
+Nếu bridge chưa chạy, hệ thống có thể dùng `local-fallback` để test UI, route, session và guardrail.
 
-If you want the website chatbot/copilot to use the **real AI path**, you must run the external bridge service in addition to Apache/MySQL.
+## Kiến Trúc Thư Mục
 
-In the current development setup, that service is the companion `Bot-Local` repo listening on port `10001`.
+```text
+app/
+  Controllers/          Controller public
+  Controllers/Admin/    Controller admin
+  Core/                 App, Controller, Model, Database, Auth
+  Helpers/              Helper dùng chung
+  Models/               Model PDO
+  Services/             Business service, AI service, import/export service
+  Views/                View PHP
+config/
+  config.php            Cấu hình app/database/security
+  routes.php            Route map
+database/
+  schema.sql            Schema chính + seed
+  *.sql                 Migration bổ sung
+docs/
+  README_AI.md
+  AI_PORTING_GUIDE.md
+  AI_FEATURE_PHASES_CHECKLIST.md
+  AI_CONTEXT_MAP.md
+  AI_TASK_TEMPLATE.md
+  AI_IMPLEMENTATION_STATUS.md
+public/
+  index.php             Entry point
+  assets/css            CSS frontend/admin
+  assets/js             JavaScript frontend/admin
+  assets/images         Ảnh tĩnh
+tools/
+  repair_db_mojibake.php
+```
 
-Example:
+## Cài Đặt Local Bằng XAMPP
+
+### 1. Clone repo
 
 ```bash
-cd E:\ZALO-BotChat
-bun run dev:bot
+git clone https://github.com/EmBeHocCode/ZenoxDigital.git
+cd ZenoxDigital
 ```
 
-Or:
+### 2. Tạo file `.env`
 
 ```bash
-cd E:\ZALO-BotChat
-bun run --cwd apps/bot dev
+copy .env.example .env
 ```
 
-Notes:
+Sửa các biến quan trọng:
 
-- This bot service is **not part of** the ZenoxDigital PHP repo
-- In the current dev machine, the `Bot-Local` repo is located at `E:\ZALO-BotChat`
-- It must run separately
-- If it is offline, ZenoxDigital can still answer with `local-fallback`
-- If it is online, responses should switch to `real_bridge`
+```env
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost/ZenoxDigital/public
 
-## 6.3 End-to-end AI checklist
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=digital_market
+DB_USER=root
+DB_PASS=
+DB_CHARSET=utf8mb4
+```
 
-1. Start Apache + MySQL for ZenoxDigital
-2. Verify `AI_BRIDGE_URL` in ZenoxDigital `.env`
-3. Start the external bridge on the expected port
-4. Open `http://localhost/ZenoxDigital/public`
-5. Test the customer widget or admin copilot
-6. Inspect response metadata to confirm `real_bridge` or `fallback`
+Không commit `.env` thật lên GitHub.
 
----
+### 3. Tạo database
 
-## 7. Development roadmap
+Mở phpMyAdmin hoặc MySQL CLI, import:
 
-### Stage A - Data quality hardening
+```text
+database/schema.sql
+```
 
-- Fill real operational values for phase 6/7 fields
-- Improve admin input quality checks
-- Standardize supplier/lead-time/cost data
+Nếu cần dữ liệu/migration mới, chạy thêm:
 
-### Stage B - Production-ready phase 6/7
+```text
+database/20260328_add_cloud_products.sql
+database/20260422_add_phase67_product_columns.sql
+database/20260514_create_hero_banners.sql
+database/20260514_add_student_vps_products.sql
+```
 
-- Improve capacity signal confidence
-- Refine product-type-specific profit rules
-- Add service-level tests for guardrail/recommendation logic
+### 4. Chạy app
 
-### Stage C - Phase 8 completion
+Với XAMPP:
 
-- Daily/weekly executive reporting
-- Prioritized action queue
-- Action checklist for operators
+```text
+http://localhost/ZenoxDigital/public
+```
 
----
+Admin:
 
-## 8. Academic and portfolio value
+```text
+http://localhost/ZenoxDigital/public/admin
+```
 
-- **Academic/capstone**: multi-actor architecture + security + payment + AI guardrails
-- **Portfolio/job applications**: practical full-stack system with constrained AI operations
+## Tài Khoản Và Phân Quyền
 
----
+Schema có bảng:
 
-## 9. Related docs
+- `roles`
+- `users`
+- `user_sessions`
+- `user_login_activities`
+- `user_backup_codes`
 
+Phân quyền admin/staff được xử lý trong:
+
+- `app/Core/Auth.php`
+- `app/Views/partials/admin_sidebar.php`
+- các controller trong `app/Controllers/Admin`
+
+Nếu quên mật khẩu admin khi học local, có thể reset bằng SQL hoặc dùng màn admin user nếu còn tài khoản quản trị khác.
+
+## Database
+
+Các bảng chính:
+
+- `users`
+- `roles`
+- `categories`
+- `products`
+- `product_images`
+- `orders`
+- `order_items`
+- `wallet_transactions`
+- `coupons`
+- `user_rank_coupons`
+- `customer_feedback`
+- `ai_chat_sessions`
+- `ai_chat_messages`
+- `settings`
+- `admin_audit_logs`
+- `hero_banners`
+
+Database dùng:
+
+```sql
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci
+```
+
+## Bảo Mật
+
+Dự án đã có các lớp bảo vệ cơ bản:
+
+- CSRF token.
+- Session hardening.
+- Rate limit cho auth, AI, feedback.
+- Role/scope admin.
+- 2FA TOTP và backup code.
+- Audit log admin.
+- Guardrail AI theo quyền.
+- Không lưu secret trong JavaScript.
+
+Các file không được commit:
+
+- `.env`
+- file export database trong `database/exports/`
+- file upload trong `public/uploads/`
+- file zip backup local.
+
+## Các Route Quan Trọng
+
+Public:
+
+- `GET /`
+- `GET /products`
+- `GET /products/show/{id}`
+- `POST /products/checkout/{id}`
+- `GET /profile`
+- `POST /profile/wallet/deposit`
+- `POST /ai/chat/customer`
+- `POST /ai/feedback/customer`
+- `POST /feedback/header/store`
+
+Admin:
+
+- `GET /admin`
+- `GET /admin/products`
+- `GET /admin/categories`
+- `GET /admin/banners`
+- `GET /admin/users`
+- `GET /admin/orders`
+- `GET /admin/payments`
+- `GET /admin/settings`
+- `GET /admin/sql-manager`
+- `GET /admin/coupons`
+- `GET /admin/ranks`
+- `GET /admin/audit-logs`
+- `POST /admin/ai/chat`
+
+## Quy Trình Làm Việc Gợi Ý Cho Người Học
+
+1. Đọc `config/routes.php` để hiểu URL đi vào controller nào.
+2. Đọc controller tương ứng trong `app/Controllers`.
+3. Đọc model trong `app/Models` để hiểu query database.
+4. Đọc view trong `app/Views` để hiểu dữ liệu được render ra UI.
+5. Đọc JS/CSS trong `public/assets` để hiểu tương tác frontend.
+6. Với AI, đọc `docs/README_AI.md` và `docs/AI_PORTING_GUIDE.md` trước khi sửa.
+
+## Kiểm Tra Nhanh Trước Khi Push
+
+Lint PHP từng file:
+
+```bash
+C:\xampp\php\php.exe -l app/Controllers/Admin/SqlManagerController.php
+C:\xampp\php\php.exe -l app/Models/SqlManager.php
+C:\xampp\php\php.exe -l app/Views/admin/sql_manager/index.php
+```
+
+Check JavaScript:
+
+```bash
+node --check public/assets/js/admin-sql-manager.js
+```
+
+Kiểm tra diff:
+
+```bash
+git diff --check
+git status --short
+```
+
+## Deploy Lên VPS
+
+Luồng deploy cơ bản:
+
+1. Clone repo lên VPS.
+2. Tạo `.env` production.
+3. Import database.
+4. Trỏ web server vào thư mục `public`.
+5. Cấp quyền ghi cho thư mục runtime/upload nếu cần.
+6. Bật HTTPS.
+7. Cấu hình AI bridge nếu dùng AI thật.
+8. Kiểm tra `/admin`, `/products`, `/ai/chat/customer`.
+
+Ví dụ Apache/Nginx cần đặt document root:
+
+```text
+/path/to/ZenoxDigital/public
+```
+
+## Roadmap Đề Xuất
+
+- Hoàn thiện dữ liệu thật cho cost/capacity/stock.
+- Thêm test tự động cho service quan trọng.
+- Tách migration rõ hơn theo version.
+- Hoàn thiện báo cáo điều hành AI phase 8.
+- Tối ưu phân quyền admin theo từng module.
+- Chuẩn hóa quy trình deploy 24/7 bằng Docker Compose.
+
+## Tài Liệu Liên Quan
+
+- `AGENTS.md`
+- `SECURITY_NOTES.md`
+- `docs/README_AI.md`
 - `docs/AI_PORTING_GUIDE.md`
+- `docs/AI_CONTEXT_MAP.md`
+- `docs/AI_TASK_TEMPLATE.md`
 - `docs/AI_IMPLEMENTATION_STATUS.md`
 - `docs/AI_FEATURE_PHASES_CHECKLIST.md`
-- `docs/README_AI.md`
 
----
+## Ghi Chú Học Tập
 
-## 10. License
+Khi dùng repo này để làm đồ án, em nên trình bày theo 5 phần:
 
-MIT - see `LICENSE`.
+1. Bài toán và mục tiêu hệ thống.
+2. Kiến trúc MVC và database.
+3. Các phân hệ người dùng/admin.
+4. Bảo mật, phân quyền, audit.
+5. AI chatbot/Copilot và guardrail dữ liệu.
 
+Nếu giáo viên hỏi “AI có tự quyết định dữ liệu không?”, câu trả lời đúng là: không. AI chỉ hỗ trợ tư vấn/gợi ý; backend vẫn kiểm soát quyền, context, dữ liệu và mutation.
+
+## License
+
+MIT. Xem file `LICENSE`.

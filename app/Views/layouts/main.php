@@ -6,6 +6,7 @@ $siteFaviconUrl = $siteFavicon !== '' ? base_url('uploads/' . ltrim($siteFavicon
 $siteLogo = trim((string) app_setting('site_logo', ''));
 $siteLogoUrl = $siteLogo !== '' ? base_url('uploads/' . ltrim($siteLogo, '/')) : base_url('images/logo/zenox.png');
 $publicRoot = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'public';
+$appCssVersion = @filemtime($publicRoot . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . 'app.css') ?: '1';
 $currentContentPath = isset($content) ? realpath((string) $content) : false;
 $homeViewPath = realpath(__DIR__ . '/../home/index.php');
 $isHomePage = $currentContentPath !== false && $homeViewPath !== false && $currentContentPath === $homeViewPath;
@@ -61,7 +62,7 @@ if (isset($structuredData) && is_array($structuredData)) {
     <meta name="twitter:image" content="<?= e($metaImageUrl) ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="<?= base_url('assets/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/app.css?v=' . $appCssVersion) ?>">
     <?php if (Auth::check() || !empty($userPanel)): ?>
         <link rel="stylesheet" href="<?= base_url('assets/css/user-account.css') ?>">
         <link rel="stylesheet" href="<?= base_url('assets/css/profile-banner-studio.css?v=' . $profileBannerStudioCssVersion) ?>">

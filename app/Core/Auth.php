@@ -105,6 +105,7 @@ class Auth
                 'admin.products.manage',
                 'admin.categories.view',
                 'admin.categories.manage',
+                'admin.banners.manage',
                 'admin.orders.view',
                 'admin.orders.manage',
                 'admin.payments.view',

@@ -197,6 +197,70 @@ class SqlManagerController extends Controller
         }
     }
 
+    public function exportSql(): void
+    {
+        $this->ensureAdminApi();
+        $this->ensurePostApi();
+
+        $sqlManager = new SqlManager($this->config);
+        $scope = strtolower(trim((string) ($_POST['scope'] ?? 'database')));
+        $table = trim((string) ($_POST['table'] ?? ''));
+        $includeSchema = $this->postBool('include_schema', true);
+        $includeData = $this->postBool('include_data', true);
+        $addDrop = $this->postBool('add_drop', true);
+        $insertMode = strtoupper(trim((string) ($_POST['insert_mode'] ?? 'INSERT')));
+
+        try {
+            $dump = $sqlManager->exportSqlDump([
+                'scope' => $scope,
+                'table' => $table,
+                'include_schema' => $includeSchema,
+                'include_data' => $includeData,
+                'add_drop' => $addDrop,
+                'insert_mode' => $insertMode,
+            ]);
+
+            admin_audit('sql_export', $scope === 'table' ? $table : 'database', null, [
+                'database' => $dump['database'] ?? '',
+                'scope' => $scope,
+                'table_count' => (int) ($dump['table_count'] ?? 0),
+                'row_count' => (int) ($dump['row_count'] ?? 0),
+                'include_schema' => (bool) ($dump['include_schema'] ?? false),
+                'include_data' => (bool) ($dump['include_data'] ?? false),
+                'add_drop' => (bool) ($dump['add_drop'] ?? false),
+                'insert_mode' => (string) ($dump['insert_mode'] ?? ''),
+            ]);
+
+            $filename = $this->sqlExportFilename((string) ($dump['database'] ?? 'database'), $scope, $table);
+            $nextToken = csrf_token();
+
+            if (function_exists('apache_setenv')) {
+                @apache_setenv('no-gzip', '1');
+            }
+
+            while (ob_get_level() > 0) {
+                if (!@ob_end_clean()) {
+                    break;
+                }
+            }
+
+            header('Content-Type: application/sql; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('X-Content-Type-Options: nosniff');
+            header('X-CSRF-TOKEN: ' . $nextToken);
+            echo (string) ($dump['sql'] ?? '');
+            exit;
+        } catch (\Throwable $exception) {
+            $dbError = $this->normalizeDatabaseError($exception);
+            $this->respondJson([
+                'success' => false,
+                'message' => $dbError['message'],
+                'error' => $dbError,
+                'csrf_token' => csrf_token(),
+            ], 422);
+        }
+    }
+
     public function commitBatch(): void
     {
         $this->ensureAdminApi();
@@ -380,6 +444,29 @@ class SqlManagerController extends Controller
         }
 
         return $decoded;
+    }
+
+    private function postBool(string $field, bool $default = false): bool
+    {
+        if (!array_key_exists($field, $_POST)) {
+            return $default;
+        }
+
+        $value = strtolower(trim((string) $_POST[$field]));
+
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private function sqlExportFilename(string $database, string $scope, string $table): string
+    {
+        $base = $scope === 'table' && $table !== '' ? $database . '-' . $table : $database;
+        $base = preg_replace('/[^A-Za-z0-9_.-]+/', '-', $base) ?: 'database';
+        $base = trim($base, '-_.');
+        if ($base === '') {
+            $base = 'database';
+        }
+
+        return $base . '-' . date('Ymd-His') . '.sql';
     }
 
     private function normalizeDatabaseError(\Throwable $exception): array

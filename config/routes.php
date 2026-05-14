@@ -61,6 +61,14 @@ return [
     ['POST', '/admin/categories/update/{id}', 'Admin\\CategoryController@update'],
     ['POST', '/admin/categories/delete/{id}', 'Admin\\CategoryController@delete'],
 
+    ['GET', '/admin/banners', 'Admin\\BannerController@index'],
+    ['GET', '/admin/banners/create', 'Admin\\BannerController@create'],
+    ['POST', '/admin/banners/store', 'Admin\\BannerController@store'],
+    ['GET', '/admin/banners/edit/{id}', 'Admin\\BannerController@edit'],
+    ['POST', '/admin/banners/update/{id}', 'Admin\\BannerController@update'],
+    ['POST', '/admin/banners/delete/{id}', 'Admin\\BannerController@delete'],
+    ['POST', '/admin/banners/toggle-status/{id}', 'Admin\\BannerController@toggleStatus'],
+
     ['GET', '/admin/users', 'Admin\\UserController@index'],
     ['GET', '/admin/users/create', 'Admin\\UserController@create'],
     ['POST', '/admin/users/store', 'Admin\\UserController@store'],
@@ -84,6 +92,7 @@ return [
     ['POST', '/admin/sql-manager/query', 'Admin\\SqlManagerController@runQuery'],
     ['POST', '/admin/sql-manager/commit-batch', 'Admin\\SqlManagerController@commitBatch'],
     ['POST', '/admin/sql-manager/import', 'Admin\\SqlManagerController@importSql'],
+    ['POST', '/admin/sql-manager/export-sql', 'Admin\\SqlManagerController@exportSql'],
     ['POST', '/admin/sql-manager/update-row', 'Admin\\SqlManagerController@updateRow'],
     ['POST', '/admin/sql-manager/insert-row', 'Admin\\SqlManagerController@insertRow'],
     ['POST', '/admin/sql-manager/delete-row', 'Admin\\SqlManagerController@deleteRow'],

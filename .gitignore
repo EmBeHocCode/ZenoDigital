@@ -24,6 +24,7 @@ tmp_*
 *.log
 *.tmp
 *.cache
+*.zip
 
 # Local database exports
 database/exports/

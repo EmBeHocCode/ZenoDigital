@@ -12,7 +12,11 @@ $siteLogo = trim((string) app_setting('site_logo', ''));
 $siteLogoUrl = $siteLogo !== '' ? base_url('uploads/' . ltrim($siteLogo, '/')) : base_url('images/logo/zenox.png');
 $currentRoleLabel = role_display_name((string) (Auth::user()['role_name'] ?? 'user'));
 $currentWalletBalance = (float) (Auth::user()['wallet_balance'] ?? 0);
-$contactEmail = trim((string) app_setting('contact_email', 'support@digitalmarket.local'));
+$contactEmail = trim((string) app_setting('contact_email', 'meowshopsite@gmail.com'));
+$legacyContactEmail = 'support' . '@' . 'digitalmarket.local';
+if ($contactEmail === '' || strcasecmp($contactEmail, $legacyContactEmail) === 0) {
+    $contactEmail = 'meowshopsite@gmail.com';
+}
 $contactPhone = trim((string) app_setting('contact_phone', '0888941220'));
 $contactPhoneDigits = preg_replace('/\D+/', '', $contactPhone) ?? '';
 
@@ -52,6 +56,8 @@ $affiliateUrl = Auth::check() ? base_url('profile?tab=seller') : base_url('login
 $faqUrl = base_url('/#faq');
 $guideUrl = base_url('/#vps-guides');
 $aboutUrl = base_url('/#cloud-overview');
+$affiliateSectionUrl = base_url('/#affiliate-program');
+$resellerSectionUrl = base_url('/#reseller-program');
 $contactUrl = $contactPhoneDigits !== '' ? 'https://zalo.me/' . $contactPhoneDigits : ('mailto:' . $contactEmail);
 $homePath = parse_url(base_url('/'), PHP_URL_PATH) ?: '/';
 $isHomeActive = rtrim($uriPath, '/') === rtrim($homePath, '/');
@@ -168,6 +174,14 @@ $isAffiliateActive = str_contains($uriPath, '/profile') && $activeTab === 'selle
                         <a class="dropdown-item" href="<?= e($contactUrl) ?>" target="_blank" rel="noopener noreferrer">
                             <i class="fas fa-headset"></i>
                             <span>Liên hệ hỗ trợ</span>
+                        </a>
+                        <a class="dropdown-item" href="<?= e($affiliateSectionUrl) ?>">
+                            <i class="fas fa-handshake-angle"></i>
+                            <span>Tiếp thị liên kết</span>
+                        </a>
+                        <a class="dropdown-item" href="<?= e($resellerSectionUrl) ?>">
+                            <i class="fas fa-store"></i>
+                            <span>Trở thành đại lý</span>
                         </a>
                     </div>
                 </li>

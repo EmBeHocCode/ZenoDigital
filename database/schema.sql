@@ -2,6 +2,7 @@
 CREATE DATABASE IF NOT EXISTS digital_market CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE digital_market;
 
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS ai_chat_messages;
 DROP TABLE IF EXISTS ai_chat_sessions;
@@ -101,6 +102,21 @@ CREATE TABLE product_images (
     image_path VARCHAR(255) NOT NULL,
     created_at DATETIME NOT NULL,
     CONSTRAINT fk_product_images_product FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+CREATE TABLE hero_banners (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(180) NOT NULL,
+    subtitle VARCHAR(500) NULL,
+    image_path VARCHAR(255) NOT NULL,
+    link_label VARCHAR(80) NULL,
+    link_url VARCHAR(500) NULL,
+    display_order INT NOT NULL DEFAULT 0,
+    status ENUM('active','inactive') NOT NULL DEFAULT 'active',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    deleted_at DATETIME NULL,
+    INDEX idx_hero_banners_status_order (status, display_order, id)
 );
 
 CREATE TABLE orders (
@@ -290,7 +306,8 @@ VALUES
 ('Server Game', 'server-game', 'Dịch vụ máy chủ game ổn định', NOW(), NOW()),
 ('SIM số / SIM data', 'sim-so-sim-data', 'SIM số đẹp và data tốc độ cao', NOW(), NOW()),
 ('Wallet Steam', 'wallet-steam', 'Nạp ví Steam nhanh chóng', NOW(), NOW()),
-('Thẻ game / Thẻ nạp', 'the-game-the-nap', 'Mã thẻ đa nền tảng', NOW(), NOW());
+('Thẻ game / Thẻ nạp', 'the-game-the-nap', 'Mã thẻ đa nền tảng', NOW(), NOW()),
+('VPS Giá Rẻ Cho Sinh Viên', 'vps-gia-re-cho-sinh-vien', 'Các gói Cloud VPS nhỏ gọn, chi phí thấp cho sinh viên học tập, làm đồ án và chạy thử nghiệm.', NOW(), NOW());
 
 INSERT INTO products (category_id, name, slug, price, short_description, description, specs, image, stock_status, status, created_at, updated_at)
 VALUES
@@ -303,9 +320,20 @@ VALUES
 (1, 'Cloud Server High CPU', 'cloud-server-high-cpu', 629000, 'Tối ưu CPU cho queue, automation và backend xử lý nhiều tác vụ', 'Phù hợp crawler, API nhiều request và workload cần tài nguyên xử lý ổn định.', 'CPU: 6vCore High Clock\nRAM: 8GB\nSSD NVMe: 180GB\nBandwidth: 4TB\nIP: 1 IPv4\nLocation: US', NULL, 'in_stock', 'active', NOW(), NOW()),
 (1, 'Cloud Server High RAM', 'cloud-server-high-ram', 729000, 'RAM lớn cho cache, app nhiều tiến trình và database vừa', 'Phù hợp Redis, app PHP/Node nhiều worker và dịch vụ cần giữ nhiều dữ liệu trong memory.', 'CPU: 4vCore\nRAM: 16GB\nSSD NVMe: 220GB\nBandwidth: 5TB\nIP: 1 IPv4\nLocation: VN', NULL, 'in_stock', 'active', NOW(), NOW()),
 (1, 'VPS Ryzen Pro', 'vps-ryzen-pro', 699000, 'Ryzen mạnh hơn cho production, game backend và automation', 'Phù hợp website doanh thu thật, app nội bộ nhiều user và workload cần độ phản hồi tốt.', 'CPU: 6vCore Ryzen\nRAM: 16GB\nSSD NVMe: 240GB\nBandwidth: 5TB\nIP: 1 IPv4\nLocation: SG', NULL, 'in_stock', 'active', NOW(), NOW()),
+(6, 'Student Nano', 'student-nano', 35000, 'Gói rẻ nhất để học Linux, SSH và chạy web nhỏ.', 'Phù hợp sinh viên mới bắt đầu học VPS, deploy landing page, web tĩnh hoặc môi trường test rất nhẹ.', 'CPU: 1 vCPU\nRAM: 1 GB\nNVMe: 20 GB\nBandwidth: 1 TB\nIP: 1 IPv4\nLocation: VN', NULL, 'in_stock', 'active', NOW(), NOW()),
+(6, 'Student Basic', 'student-basic', 59000, 'Khởi đầu nhẹ nhàng cho bài tập web, bot nhỏ và demo API.', 'Phù hợp chạy project PHP/Node nhỏ, bot học tập, API mini hoặc website cá nhân ít truy cập.', 'CPU: 1 vCPU\nRAM: 2 GB\nNVMe: 30 GB\nBandwidth: 2 TB\nIP: 1 IPv4\nLocation: VN', NULL, 'in_stock', 'active', NOW(), NOW()),
+(6, 'Student Plus', 'student-plus', 89000, 'Cấu hình cân bằng cho đồ án web và môi trường dev nhỏ.', 'Phù hợp đồ án Laravel/PHP, WordPress nhẹ, API mini hoặc bot cần thêm CPU nhưng vẫn tiết kiệm.', 'CPU: 2 vCPU\nRAM: 2 GB\nNVMe: 40 GB\nBandwidth: 2 TB\nIP: 1 IPv4\nLocation: VN', NULL, 'in_stock', 'active', NOW(), NOW()),
+(6, 'Student Pro', 'student-pro', 129000, 'Gói lab cho đồ án nhóm, không thay thế Cloud Server production.', 'Phù hợp demo nhóm, web app nhỏ, database nhẹ và môi trường test dài ngày. Nếu chạy website thật hoặc production, nên chọn Cloud Server Starter 1.', 'CPU: 2 vCPU chia sẻ\nRAM: 3 GB\nNVMe: 50 GB\nBandwidth: 2 TB\nIP: 1 IPv4\nLocation: VN', NULL, 'in_stock', 'active', NOW(), NOW()),
 (2, 'Game Server Minecraft', 'game-server-minecraft', 259000, 'Server tối ưu cho Minecraft', 'Hỗ trợ cài plugin, backup tự động.', 'RAM: 8GB\nStorage: 120GB SSD\nDDoS Protection', NULL, 'in_stock', 'active', NOW(), NOW()),
 (4, 'Steam Wallet 500K', 'steam-wallet-500k', 500000, 'Nạp Wallet Steam mệnh giá 500K', 'Kích hoạt nhanh trong vài phút.', 'Delivery: Instant\nRegion: VN', NULL, 'in_stock', 'active', NOW(), NOW()),
 (5, 'Thẻ game đa nền tảng 200K', 'the-game-da-nen-tang-200k', 200000, 'Mã thẻ game tiện lợi', 'Hỗ trợ nhiều nhà phát hành game.', 'Card Type: Digital Code', NULL, 'in_stock', 'active', NOW(), NOW());
+
+INSERT INTO hero_banners (title, subtitle, image_path, link_label, link_url, display_order, status, created_at, updated_at)
+VALUES
+('VPS tốc độ cao', 'Hiệu năng vượt trội cho website, app và workload cần phản hồi nhanh.', 'slide1.png', 'Xem gói ngay', 'products?category_id=1', 1, 'active', NOW(), NOW()),
+('Cloud VPS SSD NVMe', 'Lưu trữ NVMe tốc độ cao, ổn định và an toàn cho hệ thống online.', 'slide2.png', 'Xem gói NVMe', 'products?category_id=1&q=NVMe', 2, 'active', NOW(), NOW()),
+('Game Server', 'Máy chủ game tối ưu hiệu năng, kết nối ổn định và bảo vệ Anti-DDoS.', 'slide3.png', 'Khám phá Game Server', 'products?category_id=2', 3, 'active', NOW(), NOW()),
+('Cloud cho doanh nghiệp', 'Giải pháp cloud ổn định, bảo mật và dễ mở rộng cho vận hành thực tế.', 'slide4.png', 'Tư vấn ngay', '#business-cloud', 4, 'active', NOW(), NOW());
 
 -- Demo-only seed for phase 6/7 signals. Real production values must be maintained from admin backoffice.
 UPDATE products p
@@ -379,7 +407,7 @@ VALUES
 INSERT INTO settings (setting_key, setting_value, updated_at)
 VALUES
 ('site_name', 'Digital Market Pro', NOW()),
-('contact_email', 'support@digitalmarket.local', NOW()),
+('contact_email', 'meowshopsite@gmail.com', NOW()),
 ('contact_phone', '0900 000 999', NOW()),
 ('address', 'TP.HCM, Việt Nam', NOW()),
 ('footer_text', 'Nền tảng dịch vụ số hiện đại và an toàn.', NOW()),

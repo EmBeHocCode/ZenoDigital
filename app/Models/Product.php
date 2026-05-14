@@ -48,6 +48,33 @@ class Product extends Model
         return $stmt->fetchAll() ?: [];
     }
 
+    public function activeByCategoryId(int $categoryId, int $limit = 8, string $sort = 'latest'): array
+    {
+        if ($categoryId <= 0) {
+            return [];
+        }
+
+        $orderBy = match ($sort) {
+            'price_asc' => 'p.price ASC, p.id ASC',
+            'price_desc' => 'p.price DESC, p.id ASC',
+            default => 'p.created_at DESC, p.id DESC',
+        };
+
+        $stmt = $this->db->prepare("SELECT p.*, c.name AS category_name
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            WHERE p.status = 'active'
+                AND p.deleted_at IS NULL
+                AND p.category_id = :category_id
+            ORDER BY {$orderBy}
+            LIMIT :limit");
+        $stmt->bindValue(':category_id', $categoryId, \PDO::PARAM_INT);
+        $stmt->bindValue(':limit', max(1, $limit), \PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
     public function paginated(array $filters, int $page, int $perPage): array
     {
         $where = ['p.deleted_at IS NULL'];
@@ -81,8 +108,9 @@ class Product extends Model
         }
 
         if (!empty($filters['ram'])) {
-            $where[] = 'p.specs LIKE :ram';
+            $where[] = '(p.specs LIKE :ram OR p.specs LIKE :ram_spaced)';
             $params['ram'] = '%RAM: ' . $filters['ram'] . '%';
+            $params['ram_spaced'] = '%RAM: ' . str_replace('GB', ' GB', (string) $filters['ram']) . '%';
         }
 
         if (!empty($filters['disk'])) {

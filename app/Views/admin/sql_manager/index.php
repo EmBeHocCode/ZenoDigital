@@ -19,6 +19,7 @@ $bootstrapPayload = [
          data-query-url="<?= e(base_url('admin/sql-manager/query')) ?>"
          data-commit-url="<?= e(base_url('admin/sql-manager/commit-batch')) ?>"
          data-import-url="<?= e(base_url('admin/sql-manager/import')) ?>"
+         data-export-sql-url="<?= e(base_url('admin/sql-manager/export-sql')) ?>"
          data-insert-url="<?= e(base_url('admin/sql-manager/insert-row')) ?>"
          data-update-url="<?= e(base_url('admin/sql-manager/update-row')) ?>"
          data-delete-url="<?= e(base_url('admin/sql-manager/delete-row')) ?>">
@@ -73,12 +74,14 @@ $bootstrapPayload = [
                     </div>
                 </div>
             </aside>
+            <div class="sqlm-splitter" id="sqlmExplorerSplitter" title="Kéo để đổi rộng Explorer, double click để reset"></div>
 
             <main class="sqlm-workspace" aria-label="SQL workspace">
                 <section class="sqlm-headbar">
                     <div class="sqlm-head-main">
                         <div class="sqlm-section-kicker">Workbench</div>
                         <div class="sqlm-headline-row">
+                            <button id="sqlmExplorerToggleBtn" type="button" class="btn btn-sm btn-light border sqlm-explorer-toggle"><i class="fas fa-bars"></i><span>Explorer</span></button>
                             <h2 class="sqlm-title">SQL Workspace</h2>
                             <span class="sqlm-workbench-chip"><i class="fas fa-server"></i><?= e($databaseLabel) ?></span>
                             <span class="sqlm-workbench-chip is-table"><i class="fas fa-table"></i><span id="sqlmHeadTable"><?= e($selectedTableLabel) ?></span></span>
@@ -151,6 +154,7 @@ $bootstrapPayload = [
 
                     <div class="sqlm-toolbar-group" data-sqlm-toolbar="export">
                         <button id="sqlmExportBtn" type="button" class="btn btn-primary"><i class="fas fa-file-export"></i><span>Export CSV</span></button>
+                        <button type="button" class="btn btn-light border" data-sqlm-action="export-sql-full"><i class="fas fa-database"></i><span>Export SQL</span></button>
                         <button id="sqlmChartBtn" type="button" class="btn btn-light border"><i class="fas fa-chart-column"></i><span>Tạo chart</span></button>
                     </div>
 

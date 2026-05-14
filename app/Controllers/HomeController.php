@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Models\Category;
+use App\Models\HeroBanner;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Services\ModuleHealthGuardService;
@@ -20,6 +21,9 @@ class HomeController extends Controller
         $cloudCategories = [];
         $secondaryCategories = [];
         $cloudFeaturedProducts = [];
+        $studentVpsCategory = null;
+        $studentVpsProducts = [];
+        $heroBanners = [];
 
         $categoryModel = new Category($this->config);
         if ($healthGuard->isHealthy('products')) {
@@ -31,6 +35,17 @@ class HomeController extends Controller
                 $secondaryCategories = $categoryGroups['secondary'];
                 $cloudCategoryIds = array_map(static fn (array $category): int => (int) ($category['id'] ?? 0), $cloudCategories);
                 $cloudFeaturedProducts = $productModel->featuredByCategoryIds($cloudCategoryIds, 6);
+
+                foreach ($categories as $category) {
+                    if ((string) ($category['slug'] ?? '') === 'vps-gia-re-cho-sinh-vien') {
+                        $studentVpsCategory = $category;
+                        break;
+                    }
+                }
+
+                if (is_array($studentVpsCategory)) {
+                    $studentVpsProducts = $productModel->activeByCategoryId((int) ($studentVpsCategory['id'] ?? 0), 4, 'price_asc');
+                }
             }
 
             if ($cloudFeaturedProducts === []) {
@@ -52,6 +67,8 @@ class HomeController extends Controller
                 'issues' => $healthGuard->moduleStatus('categories')['issues'] ?? [],
             ]);
         }
+
+        $heroBanners = (new HeroBanner($this->config))->active();
 
         $siteName = app_site_name();
         $homeUrl = base_url('/');
@@ -92,6 +109,9 @@ class HomeController extends Controller
             'metaImageUrl' => $siteLogoUrl,
             'structuredData' => $structuredData,
             'cloudFeaturedProducts' => $cloudFeaturedProducts,
+            'studentVpsCategory' => $studentVpsCategory,
+            'studentVpsProducts' => $studentVpsProducts,
+            'heroBanners' => $heroBanners,
             'categories' => $categories,
             'cloudCategories' => $cloudCategories,
             'secondaryCategories' => $secondaryCategories,

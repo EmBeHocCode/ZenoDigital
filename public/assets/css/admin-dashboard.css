@@ -636,6 +636,26 @@ html.admin-sidebar-collapsed .admin-menu-panel .admin-menu-link::before {
     color: #475569;
 }
 
+.banner-admin-thumb {
+    display: block;
+    width: 118px;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid var(--adm-border);
+    background: #f8fafc;
+}
+
+.banner-admin-preview {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid var(--adm-border);
+    background: #f8fafc;
+}
+
 .admin-section-title {
     font-size: 1.05rem;
     font-weight: 800;

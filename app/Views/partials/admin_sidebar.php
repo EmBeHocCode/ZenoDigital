@@ -15,6 +15,7 @@ $isActive = static function (array $needles) use ($path): bool {
 $canDashboard = Auth::can('backoffice.dashboard');
 $canManageProducts = Auth::can('admin.products.manage');
 $canManageCategories = Auth::can('admin.categories.manage');
+$canManageBanners = Auth::can('admin.banners.manage');
 $canManageOrders = Auth::can('admin.orders.manage');
 $canViewPayments = Auth::can('admin.payments.view') || Auth::can('backoffice.data.payments') || Auth::can('backoffice.data.finance');
 $canViewFeedbackPage = Auth::can('admin.feedback.view');
@@ -31,7 +32,7 @@ if ($canDashboard) {
         'label' => 'Tổng quan',
         'icon' => 'fas fa-gauge-high',
         'url' => base_url('admin'),
-        'active' => $isActive(['/admin']) && !$isActive(['/admin/products', '/admin/categories', '/admin/orders', '/admin/payments', '/admin/feedback', '/admin/users', '/admin/settings', '/admin/coupons', '/admin/ranks', '/admin/audit-logs', '/admin/sql-manager']),
+        'active' => $isActive(['/admin']) && !$isActive(['/admin/products', '/admin/categories', '/admin/banners', '/admin/orders', '/admin/payments', '/admin/feedback', '/admin/users', '/admin/settings', '/admin/coupons', '/admin/ranks', '/admin/audit-logs', '/admin/sql-manager']),
     ];
 }
 
@@ -50,6 +51,14 @@ if ($canManageCategories) {
         'icon' => 'fas fa-folder-tree',
         'url' => base_url('admin/categories'),
         'active' => $isActive(['/admin/categories']),
+    ];
+}
+if ($canManageBanners) {
+    $contentItems[] = [
+        'label' => 'Quản lý banner',
+        'icon' => 'fas fa-images',
+        'url' => base_url('admin/banners'),
+        'active' => $isActive(['/admin/banners']),
     ];
 }
 

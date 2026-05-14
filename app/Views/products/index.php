@@ -30,7 +30,7 @@ $catalogTitle = $isCloudCatalog
     : (string) ($selectedCategory['name'] ?? 'Danh mục dịch vụ số');
 $catalogSubtitle = $isCloudCatalog
     ? 'Danh mục cloud tập trung cho website, API, SaaS, automation và workload cần hạ tầng ổn định.'
-    : 'Nhóm dịch vụ này vẫn tồn tại trong hệ thống, nhưng storefront hiện ưu tiên trải nghiệm cloud-first ở homepage và catalog chính.';
+    : 'Nhóm sản phẩm này chưa có.';
 $catalogKicker = $isCloudCatalog ? 'Cloud Hosting Premium' : 'Digital Service Catalog';
 
 if (!function_exists('vps_specs_extract')) {
@@ -176,6 +176,7 @@ if (!function_exists('catalog_generic_facts')) {
                     <div class="col-6 col-lg-2">
                         <select class="form-select vps-filter-input" name="cpu">
                             <option value="">CPU</option>
+                            <option value="1" <?= $filters['cpu'] === '1' ? 'selected' : '' ?>>1 vCPU</option>
                             <option value="2" <?= $filters['cpu'] === '2' ? 'selected' : '' ?>>2 vCPU</option>
                             <option value="4" <?= $filters['cpu'] === '4' ? 'selected' : '' ?>>4 vCPU</option>
                             <option value="6" <?= $filters['cpu'] === '6' ? 'selected' : '' ?>>6+ vCPU</option>
@@ -184,6 +185,8 @@ if (!function_exists('catalog_generic_facts')) {
                     <div class="col-6 col-lg-2">
                         <select class="form-select vps-filter-input" name="ram">
                             <option value="">RAM</option>
+                            <option value="1GB" <?= $filters['ram'] === '1GB' ? 'selected' : '' ?>>1 GB</option>
+                            <option value="2GB" <?= $filters['ram'] === '2GB' ? 'selected' : '' ?>>2 GB</option>
                             <option value="4GB" <?= $filters['ram'] === '4GB' ? 'selected' : '' ?>>4 GB</option>
                             <option value="8GB" <?= $filters['ram'] === '8GB' ? 'selected' : '' ?>>8 GB</option>
                             <option value="16GB" <?= $filters['ram'] === '16GB' ? 'selected' : '' ?>>16 GB+</option>
@@ -212,6 +215,7 @@ if (!function_exists('catalog_generic_facts')) {
 
                 <div class="vps-chip-row mt-3">
                     <input type="hidden" name="plan_type" value="<?= e($filters['plan_type']) ?>" data-plan-type-input>
+                    <button type="button" class="vps-chip <?= $filters['plan_type'] === 'Student' ? 'active' : '' ?>" data-plan-chip="Student">Student</button>
                     <?php foreach (['Tiết kiệm', 'Business', 'Pro', 'Gaming'] as $chip): ?>
                         <button type="button" class="vps-chip <?= $filters['plan_type'] === $chip ? 'active' : '' ?>" data-plan-chip="<?= e($chip) ?>"><?= e($chip) ?></button>
                     <?php endforeach; ?>

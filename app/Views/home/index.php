@@ -85,6 +85,8 @@ $homeNoticeConfig = [
 $cloudCategories = is_array($cloudCategories ?? null) ? $cloudCategories : [];
 $secondaryCategories = is_array($secondaryCategories ?? null) ? $secondaryCategories : [];
 $cloudFeaturedProducts = is_array($cloudFeaturedProducts ?? null) ? $cloudFeaturedProducts : [];
+$studentVpsCategory = is_array($studentVpsCategory ?? null) ? $studentVpsCategory : null;
+$studentVpsProducts = is_array($studentVpsProducts ?? null) ? $studentVpsProducts : [];
 $publicBrandName = app_site_name();
 $primaryCloudCategory = $cloudCategories[0] ?? null;
 $cloudCatalogQuery = [];
@@ -92,8 +94,17 @@ if (is_array($primaryCloudCategory) && !empty($primaryCloudCategory['id'])) {
     $cloudCatalogQuery['category_id'] = (int) $primaryCloudCategory['id'];
 }
 $cloudCatalogUrl = base_url('products' . ($cloudCatalogQuery ? '?' . http_build_query($cloudCatalogQuery) : ''));
+$studentVpsUrl = is_array($studentVpsCategory) && !empty($studentVpsCategory['id'])
+    ? base_url('products?' . http_build_query(['category_id' => (int) $studentVpsCategory['id']]))
+    : $cloudCatalogUrl;
 $cloudHeroProducts = array_slice($cloudFeaturedProducts, 0, 3);
 $primaryCloudProduct = $cloudFeaturedProducts[0] ?? null;
+$studentPlanBadges = [
+    'student-nano' => 'Rẻ nhất',
+    'student-basic' => 'Dễ bắt đầu',
+    'student-plus' => 'Cân bằng',
+    'student-pro' => 'Đồ án lớn',
+];
 $cloudValueCards = [
     [
         'icon' => 'fas fa-gauge-high',
@@ -144,11 +155,50 @@ if (!function_exists('home_cloud_specs_extract')) {
         return $summary;
     }
 }
+
+if (!function_exists('home_student_specs_extract')) {
+    function home_student_specs_extract(string $specs): array
+    {
+        $items = [];
+        $labels = [
+            'cpu' => 'CPU',
+            'ram' => 'RAM',
+            'ssd' => 'Ổ NVMe',
+            'nvme' => 'Ổ NVMe',
+            'storage' => 'Ổ lưu trữ',
+            'bandwidth' => 'Bandwidth',
+        ];
+
+        foreach (preg_split('/\r\n|\r|\n/', trim($specs)) as $line) {
+            if (!str_contains($line, ':')) {
+                continue;
+            }
+
+            [$label, $value] = array_map('trim', explode(':', $line, 2));
+            $normalized = strtolower($label);
+            foreach ($labels as $needle => $displayLabel) {
+                if (str_contains($normalized, $needle)) {
+                    $items[] = ['label' => $displayLabel, 'value' => $value];
+                    break;
+                }
+            }
+
+            if (count($items) >= 4) {
+                break;
+            }
+        }
+
+        return $items;
+    }
+}
 ?>
 
-<section class="hero-section py-5 py-lg-6">
-    <div class="container">
-        <div class="row align-items-center g-4">
+<div class="home-top-gradient">
+    <?php require __DIR__ . '/../partials/hero_banner_carousel.php'; ?>
+
+    <section class="hero-section py-5 py-lg-6">
+        <div class="container">
+            <div class="row align-items-center g-4">
             <div class="col-xl-6">
                 <span class="badge text-bg-primary mb-3">Cloud-first storefront</span>
                 <h1 class="display-5 fw-bold mb-3">Cloud VPS và Cloud Server cho website, app và workload production</h1>
@@ -218,13 +268,67 @@ if (!function_exists('home_cloud_specs_extract')) {
                     </div>
                 </div>
             </div>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
+</div>
 
 <?php require __DIR__ . '/../partials/home_notice_popup.php'; ?>
 
+<div class="home-content-surface">
+<?php if ($studentVpsProducts !== []): ?>
+    <section class="student-vps-section py-5" id="student-vps-plans">
+        <span id="vps-student" class="section-anchor"></span>
+        <div class="container">
+            <div class="student-vps-head">
+                <div>
+                    <span class="section-kicker">VPS Giá Rẻ Cho Sinh Viên</span>
+                    <h2>Cloud VPS học tập chỉ từ 35.000đ/tháng</h2>
+                    <p>Nhóm gói nhỏ gọn cho sinh viên học Linux, chạy website môn học, bot thử nghiệm, API mini và đồ án cá nhân với chi phí dễ kiểm soát.</p>
+                </div>
+                <a class="btn btn-outline-primary" href="<?= e($studentVpsUrl) ?>">Xem toàn bộ nhóm</a>
+            </div>
+
+            <div class="student-vps-grid">
+                <?php foreach ($studentVpsProducts as $product): ?>
+                    <?php
+                    $slug = (string) ($product['slug'] ?? '');
+                    $specItems = home_student_specs_extract((string) ($product['specs'] ?? ''));
+                    $badge = $studentPlanBadges[$slug] ?? (string) ($product['category_name'] ?? 'Student VPS');
+                    ?>
+                    <article class="student-plan-card <?= $slug === 'student-nano' ? 'is-cheapest' : '' ?>">
+                        <div class="student-plan-topline">
+                            <span class="student-plan-icon"><i class="fas fa-graduation-cap"></i></span>
+                            <span class="student-plan-badge"><?= e($badge) ?></span>
+                        </div>
+                        <h3><?= e((string) ($product['name'] ?? 'Student VPS')) ?></h3>
+                        <p class="student-plan-desc"><?= e((string) ($product['short_description'] ?? '')) ?></p>
+                        <div class="student-plan-price">
+                            <strong><?= format_money((float) ($product['price'] ?? 0)) ?></strong>
+                            <span>/tháng</span>
+                        </div>
+                        <ul class="student-plan-specs">
+                            <?php foreach ($specItems as $spec): ?>
+                                <li>
+                                    <span><?= e((string) $spec['label']) ?></span>
+                                    <b><?= e((string) $spec['value']) ?></b>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <p class="student-plan-note"><?= e((string) ($product['description'] ?? '')) ?></p>
+                        <div class="student-plan-actions">
+                            <a class="btn btn-outline-primary" href="<?= base_url('products/show/' . (int) $product['id']) ?>">Xem chi tiết</a>
+                            <a class="btn btn-primary" href="<?= base_url('products/show/' . (int) $product['id']) ?>#checkout">Chọn gói</a>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+<?php endif; ?>
+
 <section class="py-5 bg-light" id="cloud-catalog">
+    <span id="cloud-vps-plans" class="section-anchor"></span>
     <div class="container">
         <div class="section-heading d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
             <div>
@@ -276,6 +380,7 @@ if (!function_exists('home_cloud_specs_extract')) {
 </section>
 
 <section class="py-5" id="cloud-overview">
+    <span id="business-cloud" class="section-anchor"></span>
     <div class="container">
         <div class="section-heading mb-4">
             <span class="section-kicker">Vì sao cloud là trọng tâm</span>
@@ -310,6 +415,7 @@ require __DIR__ . '/../partials/vps_guides.php';
 
 <?php if ($secondaryCategories !== []): ?>
     <section class="py-5 bg-light">
+        <span id="game-server" class="section-anchor"></span>
         <div class="container">
             <div class="section-heading d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
                 <div>
@@ -332,38 +438,194 @@ require __DIR__ . '/../partials/vps_guides.php';
     </section>
 <?php endif; ?>
 
-<section class="py-5 bg-light" id="faq">
+<?php
+$affiliateBenefits = [
+    ['icon' => 'fas fa-percent', 'text' => 'Hoa hồng lên đến 20%'],
+    ['icon' => 'fas fa-chart-line', 'text' => 'Theo dõi doanh thu minh bạch'],
+    ['icon' => 'fas fa-calendar-check', 'text' => 'Thanh toán định kỳ'],
+    ['icon' => 'fas fa-infinity', 'text' => 'Không giới hạn thu nhập'],
+    ['icon' => 'fas fa-bullhorn', 'text' => 'Hỗ trợ tài liệu quảng bá'],
+    ['icon' => 'fas fa-link', 'text' => 'Link giới thiệu cá nhân'],
+];
+
+$commissionLevels = [
+    ['name' => 'Bronze', 'rate' => '10%', 'text' => 'Phù hợp người mới bắt đầu giới thiệu dịch vụ cloud.'],
+    ['name' => 'Silver', 'rate' => '15%', 'text' => 'Cho cộng tác viên có doanh số đều và tệp khách rõ.'],
+    ['name' => 'Gold', 'rate' => '20%', 'text' => 'Mức cao nhất cho đối tác tăng trưởng ổn định.'],
+];
+
+$resellerBenefits = [
+    ['icon' => 'fas fa-tags', 'text' => 'Chiết khấu giá sỉ'],
+    ['icon' => 'fas fa-users-gear', 'text' => 'Quản lý khách hàng'],
+    ['icon' => 'fas fa-chart-pie', 'text' => 'Theo dõi doanh thu'],
+    ['icon' => 'fas fa-cart-plus', 'text' => 'Tạo đơn hàng nhanh'],
+    ['icon' => 'fas fa-headset', 'text' => 'Hỗ trợ kỹ thuật'],
+    ['icon' => 'fas fa-file-lines', 'text' => 'Tài liệu bán hàng'],
+];
+
+$cloudFaqItems = [
+    [
+        'question' => 'Sau khi thanh toán bao lâu nhận được VPS?',
+        'answer' => 'Hệ thống tự động khởi tạo và bàn giao trong 1–5 phút tùy gói và thời điểm triển khai.',
+    ],
+    [
+        'question' => 'Có hỗ trợ cài đặt website hoặc phần mềm không?',
+        'answer' => 'Có. Hỗ trợ cài WordPress, Laravel, Node.js, Python, Docker và các phần mềm phổ biến.',
+    ],
+    [
+        'question' => 'Tôi có thể nâng cấp cấu hình sau này không?',
+        'answer' => 'Có. CPU, RAM, dung lượng lưu trữ và băng thông có thể nâng cấp bất kỳ lúc nào.',
+    ],
+    [
+        'question' => 'Có backup dữ liệu không?',
+        'answer' => 'Tùy từng gói. Một số gói hỗ trợ snapshot và backup định kỳ.',
+    ],
+    [
+        'question' => 'Có hỗ trợ kỹ thuật 24/7 không?',
+        'answer' => 'Có. Đội ngũ kỹ thuật luôn sẵn sàng hỗ trợ khi cần.',
+    ],
+    [
+        'question' => 'VPS phù hợp cho những mục đích nào?',
+        'answer' => 'Website, bot, automation, game server, AI và môi trường học tập.',
+    ],
+    [
+        'question' => 'Có thể chọn vị trí máy chủ không?',
+        'answer' => 'Có. Hỗ trợ Việt Nam, Singapore, Mỹ và nhiều khu vực khác.',
+    ],
+    [
+        'question' => 'Có chống DDoS không?',
+        'answer' => 'Có. Hệ thống được bảo vệ bằng nhiều lớp bảo mật mạng.',
+    ],
+    [
+        'question' => 'Có chính sách hoàn tiền không?',
+        'answer' => 'Có thể áp dụng trong thời gian cam kết theo chính sách dịch vụ.',
+    ],
+    [
+        'question' => 'Người mới có sử dụng được không?',
+        'answer' => 'Hoàn toàn được. Có hướng dẫn chi tiết và đội ngũ hỗ trợ tận tình.',
+    ],
+    [
+        'question' => 'Tôi có quyền root hoặc administrator không?',
+        'answer' => 'Có. Khách hàng được toàn quyền quản trị máy chủ.',
+    ],
+    [
+        'question' => 'Hỗ trợ hệ điều hành nào?',
+        'answer' => 'Ubuntu, Debian, AlmaLinux, Rocky Linux và Windows Server (tùy gói).',
+    ],
+];
+
+$affiliateApplyUrl = base_url('profile?tab=seller');
+$commissionUrl = '#affiliate-commission';
+$resellerApplyUrl = base_url('profile?tab=seller');
+$faqColumnSize = (int) ceil(count($cloudFaqItems) / 2);
+$faqColumns = array_chunk($cloudFaqItems, max(1, $faqColumnSize), true);
+?>
+
+<section class="growth-section growth-section--affiliate" id="affiliate-program">
     <div class="container">
-        <div class="section-heading mb-4">
-            <span class="section-kicker">FAQ Cloud VPS</span>
-            <h2 class="h3 fw-bold mb-2">Câu hỏi thường gặp trước khi mua cloud</h2>
+        <div class="growth-section-head">
+            <div>
+                <span class="section-kicker">Tiếp thị liên kết</span>
+                <h2>Kiếm tiền cùng ZenoDigital</h2>
+                <p>Nhận hoa hồng hấp dẫn khi giới thiệu khách hàng sử dụng dịch vụ Cloud VPS, Cloud Server và các sản phẩm số.</p>
+            </div>
+            <div class="growth-section-actions">
+                <a class="btn btn-primary" href="<?= e($affiliateApplyUrl) ?>">Đăng ký cộng tác viên</a>
+                <a class="btn btn-outline-primary" href="<?= e($commissionUrl) ?>">Xem bảng hoa hồng</a>
+            </div>
         </div>
 
-        <div class="accordion" id="faqAccordion">
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#faq1">Sau khi thanh toán bao lâu nhận được VPS?</button>
-                </h2>
-                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body">Thông thường hệ thống xử lý và bàn giao trong vài phút, tùy gói và thời điểm triển khai.</div>
+        <div class="growth-benefit-grid">
+            <?php foreach ($affiliateBenefits as $benefit): ?>
+                <article class="growth-benefit-card">
+                    <span><i class="<?= e((string) $benefit['icon']) ?>"></i></span>
+                    <strong><?= e((string) $benefit['text']) ?></strong>
+                </article>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="commission-grid" id="affiliate-commission">
+            <?php foreach ($commissionLevels as $level): ?>
+                <article class="commission-card">
+                    <span><?= e((string) $level['name']) ?></span>
+                    <strong><?= e((string) $level['rate']) ?></strong>
+                    <p><?= e((string) $level['text']) ?></p>
+                </article>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+
+<section class="growth-section growth-section--reseller" id="reseller-program">
+    <div class="container">
+        <div class="reseller-panel">
+            <div class="reseller-copy">
+                <span class="section-kicker">Đại lý / người bán</span>
+                <h2>Trở thành đại lý và bán dịch vụ dưới thương hiệu của bạn</h2>
+                <p>Tận dụng hệ thống sẵn có, giá sỉ cạnh tranh và hỗ trợ kỹ thuật chuyên sâu để phát triển hoạt động kinh doanh.</p>
+                <div class="growth-section-actions">
+                    <a class="btn btn-primary" href="<?= e($resellerApplyUrl) ?>">Đăng ký đại lý</a>
+                    <a class="btn btn-outline-primary" href="<?= e($zaloChatUrl) ?>" target="_blank" rel="noopener noreferrer">Liên hệ tư vấn</a>
                 </div>
             </div>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq2">Có hỗ trợ cài đặt website hoặc phần mềm cơ bản không?</button>
-                </h2>
-                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body">Có. <?= e($publicBrandName) ?> ưu tiên hỗ trợ nhu cầu cloud/VPS, đặc biệt với website, app nội bộ và các thiết lập kỹ thuật cơ bản.</div>
-                </div>
-            </div>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq3">Nếu VPS không truy cập được thì nên làm gì trước?</button>
-                </h2>
-                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body">Đăng nhập tài khoản, vào lịch sử VPS đã mua, thử reboot dịch vụ và đợi 1-2 phút. Nếu vẫn lỗi, liên hệ Zalo <?= e($supportPhone) ?> để được hỗ trợ nhanh.</div>
-                </div>
+
+            <div class="reseller-benefit-grid">
+                <?php foreach ($resellerBenefits as $benefit): ?>
+                    <article class="reseller-benefit-card">
+                        <i class="<?= e((string) $benefit['icon']) ?>"></i>
+                        <span><?= e((string) $benefit['text']) ?></span>
+                    </article>
+                <?php endforeach; ?>
             </div>
         </div>
     </div>
 </section>
+
+<section class="home-faq-section py-5" id="faq" aria-labelledby="cloudFaqTitle">
+    <div class="container">
+        <div class="home-faq-shell">
+            <div class="section-heading mb-4">
+                <span class="section-kicker">FAQ CLOUD VPS</span>
+                <h2 class="h3 fw-bold mb-2" id="cloudFaqTitle">Câu hỏi thường gặp trước khi mua Cloud VPS</h2>
+                <p class="text-secondary mb-0">Giải đáp những câu hỏi phổ biến nhất để khách hàng yên tâm lựa chọn dịch vụ.</p>
+            </div>
+
+            <div class="accordion home-faq-accordion" id="faqAccordion">
+                <?php foreach ($faqColumns as $columnItems): ?>
+                    <div class="home-faq-column">
+                        <?php foreach ($columnItems as $index => $item): ?>
+                            <?php
+                            $faqId = 'cloudFaq' . ($index + 1);
+                            $headingId = $faqId . 'Heading';
+                            $isOpen = $index === 0;
+                            ?>
+                            <article class="accordion-item">
+                                <h3 class="accordion-header" id="<?= e($headingId) ?>">
+                                    <button
+                                        class="accordion-button <?= $isOpen ? '' : 'collapsed' ?>"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#<?= e($faqId) ?>"
+                                        aria-expanded="<?= $isOpen ? 'true' : 'false' ?>"
+                                        aria-controls="<?= e($faqId) ?>"
+                                    >
+                                        <?= e((string) $item['question']) ?>
+                                    </button>
+                                </h3>
+                                <div
+                                    id="<?= e($faqId) ?>"
+                                    class="accordion-collapse collapse <?= $isOpen ? 'show' : '' ?>"
+                                    aria-labelledby="<?= e($headingId) ?>"
+                                    data-bs-parent="#faqAccordion"
+                                >
+                                    <div class="accordion-body"><?= e((string) $item['answer']) ?></div>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
