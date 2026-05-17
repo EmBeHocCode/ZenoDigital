@@ -12,6 +12,16 @@ $siteFaviconUrl = $siteFavicon !== '' ? base_url('uploads/' . ltrim($siteFavicon
 $sepayConfig = sepay_config();
 $sepayWebhookToken = (string) ($sepayConfig['webhook_token'] ?? '');
 $sepayWebhookUrl = sepay_webhook_url();
+$settingText = static function (string $key, string $default = '') use ($settings): string {
+    $value = trim((string) ($settings[$key] ?? ''));
+
+    return $value !== '' ? $value : $default;
+};
+$defaultFooterProductLinks = "VPS Giá Rẻ|/#student-vps-plans\nCloud VPS|/#cloud-vps-plans\nCloud Server|products?q=server\nGame Server|products?q=game\nAI GPU|products?q=gpu\nSIM Số|products?q=sim";
+$defaultFooterSupportLinks = "Hướng dẫn sử dụng|/#vps-guides\nFAQ|/#faq\nTicket hỗ trợ|#contact\nLiên hệ|#contact";
+$defaultFooterPolicyLinks = "Điều khoản dịch vụ|/#faq\nChính sách bảo mật|/#faq\nChính sách hoàn tiền|/#faq\nPhương thức thanh toán|/#payment-methods";
+$defaultFooterCommitments = "Kích hoạt tự động trong vài phút\nBảo mật nhiều lớp\nHỗ trợ kỹ thuật 24/7\nHạ tầng ổn định cho production";
+$defaultFooterPayments = "VietQR|fas fa-qrcode\nMoMo|fas fa-wallet\nZaloPay|fas fa-bolt\nVisa|fab fa-cc-visa\nMastercard|fab fa-cc-mastercard";
 ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div>
@@ -24,11 +34,17 @@ $sepayWebhookUrl = sepay_webhook_url();
     <?= csrf_field() ?>
 
     <div class="admin-card mb-3">
-        <div class="admin-card-header"><h2 class="h6 fw-bold mb-0">General</h2></div>
+        <div class="admin-card-header d-flex justify-content-between align-items-center gap-2">
+            <h2 class="h6 fw-bold mb-0">General</h2>
+            <button type="submit" name="settings_section" value="general" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-save me-1"></i>Lưu mục này
+            </button>
+        </div>
         <div class="admin-card-body">
             <div class="row g-3">
                 <div class="col-md-6"><label class="form-label">Tên website</label><input class="form-control" name="site_name" value="<?= e($siteNameSettingValue) ?>"></div>
                 <div class="col-md-6"><label class="form-label">Email liên hệ</label><input class="form-control" name="contact_email" value="<?= e((string) ($settings['contact_email'] ?? '')) ?>"></div>
+                <div class="col-md-6"><label class="form-label">Email phụ ở footer</label><input class="form-control" name="contact_email_secondary" value="<?= e((string) ($settings['contact_email_secondary'] ?? '')) ?>" placeholder="support-phu@example.com"></div>
                 <div class="col-md-6"><label class="form-label">Số điện thoại</label><input class="form-control" name="contact_phone" value="<?= e((string) ($settings['contact_phone'] ?? '')) ?>"></div>
                 <div class="col-md-6"><label class="form-label">Địa chỉ</label><input class="form-control" name="address" value="<?= e((string) ($settings['address'] ?? '')) ?>"></div>
                 <div class="col-12"><label class="form-label">Footer text</label><textarea class="form-control" rows="3" name="footer_text"><?= e((string) ($settings['footer_text'] ?? '')) ?></textarea></div>
@@ -37,7 +53,12 @@ $sepayWebhookUrl = sepay_webhook_url();
     </div>
 
     <div class="admin-card mb-3">
-        <div class="admin-card-header"><h2 class="h6 fw-bold mb-0">Branding</h2></div>
+        <div class="admin-card-header d-flex justify-content-between align-items-center gap-2">
+            <h2 class="h6 fw-bold mb-0">Branding</h2>
+            <button type="submit" name="settings_section" value="branding" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-save me-1"></i>Lưu mục này
+            </button>
+        </div>
         <div class="admin-card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
@@ -54,14 +75,112 @@ $sepayWebhookUrl = sepay_webhook_url();
                     <label class="form-label">Facebook URL</label>
                     <input class="form-control mb-2" name="facebook_url" value="<?= e((string) ($settings['facebook_url'] ?? '')) ?>">
                     <label class="form-label">Zalo URL</label>
-                    <input class="form-control" name="zalo_url" value="<?= e((string) ($settings['zalo_url'] ?? '')) ?>">
+                    <input class="form-control mb-2" name="zalo_url" value="<?= e((string) ($settings['zalo_url'] ?? '')) ?>">
+                    <label class="form-label">Telegram URL</label>
+                    <input class="form-control mb-2" name="telegram_url" value="<?= e((string) ($settings['telegram_url'] ?? '')) ?>">
+                    <label class="form-label">YouTube URL</label>
+                    <input class="form-control" name="youtube_url" value="<?= e((string) ($settings['youtube_url'] ?? '')) ?>">
                 </div>
             </div>
         </div>
     </div>
 
     <div class="admin-card mb-3">
-        <div class="admin-card-header d-flex justify-content-between align-items-center"><h2 class="h6 fw-bold mb-0">Google OAuth</h2><span class="admin-badge-soft <?= is_google_oauth_configured() ? 'is-success' : 'is-muted' ?>"><?= is_google_oauth_configured() ? 'Đã cấu hình' : 'Chưa cấu hình' ?></span></div>
+        <div class="admin-card-header d-flex justify-content-between align-items-center gap-2">
+            <h2 class="h6 fw-bold mb-0">Footer & CTA cuối trang</h2>
+            <button type="submit" name="settings_section" value="footer" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-save me-1"></i>Lưu mục này
+            </button>
+        </div>
+        <div class="admin-card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Nhãn CTA</label>
+                    <input class="form-control" name="footer_cta_kicker" value="<?= e($settingText('footer_cta_kicker', 'Cloud VPS cho học tập và vận hành')) ?>">
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Tiêu đề CTA</label>
+                    <input class="form-control" name="footer_cta_title" value="<?= e($settingText('footer_cta_title', 'Sẵn sàng triển khai Cloud VPS chỉ từ 35.000đ/tháng?')) ?>">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Mô tả CTA</label>
+                    <input class="form-control" name="footer_cta_description" value="<?= e($settingText('footer_cta_description', 'Phù hợp cho học tập, website, bot, game server và các dự án cá nhân.')) ?>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nút chính</label>
+                    <input class="form-control" name="footer_cta_primary_label" value="<?= e($settingText('footer_cta_primary_label', 'Xem gói VPS')) ?>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Link nút chính</label>
+                    <input class="form-control" name="footer_cta_primary_url" value="<?= e($settingText('footer_cta_primary_url', '/#cloud-vps-plans')) ?>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nút phụ</label>
+                    <input class="form-control" name="footer_cta_secondary_label" value="<?= e($settingText('footer_cta_secondary_label', 'Liên hệ tư vấn')) ?>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Link nút phụ</label>
+                    <input class="form-control" name="footer_cta_secondary_url" value="<?= e($settingText('footer_cta_secondary_url', '')) ?>" placeholder="Để trống sẽ dùng Zalo/email">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cột sản phẩm</label>
+                    <textarea class="form-control" name="footer_product_links" rows="6"><?= e($settingText('footer_product_links', $defaultFooterProductLinks)) ?></textarea>
+                    <div class="form-text">Mỗi dòng: <code>Tên|link</code></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cột hỗ trợ</label>
+                    <textarea class="form-control" name="footer_support_links" rows="6"><?= e($settingText('footer_support_links', $defaultFooterSupportLinks)) ?></textarea>
+                    <div class="form-text">Hỗ trợ link nội bộ, anchor, mailto, tel, https.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cột chính sách</label>
+                    <textarea class="form-control" name="footer_policy_links" rows="6"><?= e($settingText('footer_policy_links', $defaultFooterPolicyLinks)) ?></textarea>
+                    <div class="form-text">Mỗi dòng: <code>Tên|link</code></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Cam kết dịch vụ</label>
+                    <textarea class="form-control" name="footer_service_commitments" rows="5"><?= e($settingText('footer_service_commitments', $defaultFooterCommitments)) ?></textarea>
+                    <div class="form-text">Mỗi dòng là một cam kết.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phương thức thanh toán</label>
+                    <textarea class="form-control" name="footer_payment_methods" rows="5"><?= e($settingText('footer_payment_methods', $defaultFooterPayments)) ?></textarea>
+                    <div class="form-text">Mỗi dòng: <code>Tên|class icon Font Awesome</code></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Ghi chú kết nối</label>
+                    <input class="form-control" name="footer_social_note" value="<?= e($settingText('footer_social_note', 'Theo dõi kênh hỗ trợ để nhận cập nhật dịch vụ, ưu đãi cloud và thông báo vận hành.')) ?>">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Dòng mô tả cuối footer</label>
+                    <input class="form-control" name="footer_bottom_note" value="<?= e($settingText('footer_bottom_note', 'Cloud VPS, dịch vụ số và hỗ trợ kỹ thuật cho sản phẩm thực tế.')) ?>">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-card mb-3">
+        <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h2 class="h6 fw-bold mb-0">Slide landing page</h2>
+                <div class="text-secondary small">Thêm, sửa, xóa, bật/tắt và sắp xếp ảnh slide ngoài trang chủ.</div>
+            </div>
+            <a class="btn btn-outline-primary btn-sm" href="<?= base_url('admin/banners') ?>">
+                <i class="fas fa-images me-1"></i>Quản lý slide
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-card mb-3">
+        <div class="admin-card-header d-flex justify-content-between align-items-center gap-2">
+            <h2 class="h6 fw-bold mb-0">Google OAuth</h2>
+            <div class="d-flex align-items-center gap-2">
+                <span class="admin-badge-soft <?= is_google_oauth_configured() ? 'is-success' : 'is-muted' ?>"><?= is_google_oauth_configured() ? 'Đã cấu hình' : 'Chưa cấu hình' ?></span>
+                <button type="submit" name="settings_section" value="google" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-save me-1"></i>Lưu mục này
+                </button>
+            </div>
+        </div>
         <div class="admin-card-body">
             <div class="row g-3">
                 <div class="col-md-6">
@@ -78,7 +197,12 @@ $sepayWebhookUrl = sepay_webhook_url();
     </div>
 
     <div class="admin-card mb-3">
-        <div class="admin-card-header"><h2 class="h6 fw-bold mb-0">Payment</h2></div>
+        <div class="admin-card-header d-flex justify-content-between align-items-center gap-2">
+            <h2 class="h6 fw-bold mb-0">Payment</h2>
+            <button type="submit" name="settings_section" value="payment" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-save me-1"></i>Lưu mục này
+            </button>
+        </div>
         <div class="admin-card-body">
             <div class="row g-3">
                 <div class="col-md-4"><label class="form-label">Ngân hàng</label><input class="form-control" name="payment_bank_name" value="<?= e((string) ($settings['payment_bank_name'] ?? '')) ?>" placeholder="VD: Vietcombank"></div>
@@ -104,7 +228,12 @@ $sepayWebhookUrl = sepay_webhook_url();
     </div>
 
     <div class="admin-card mb-3">
-        <div class="admin-card-header"><h2 class="h6 fw-bold mb-0">SMTP</h2></div>
+        <div class="admin-card-header d-flex justify-content-between align-items-center gap-2">
+            <h2 class="h6 fw-bold mb-0">SMTP</h2>
+            <button type="submit" name="settings_section" value="smtp" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-save me-1"></i>Lưu mục này
+            </button>
+        </div>
         <div class="admin-card-body">
             <div class="row g-3">
                 <div class="col-md-3"><label class="form-label">SMTP Host</label><input class="form-control" name="smtp_host" value="<?= e((string) ($settings['smtp_host'] ?? '')) ?>"></div>
@@ -117,7 +246,12 @@ $sepayWebhookUrl = sepay_webhook_url();
     </div>
 
     <div class="admin-card mb-3">
-        <div class="admin-card-header"><h2 class="h6 fw-bold mb-0">Security</h2></div>
+        <div class="admin-card-header d-flex justify-content-between align-items-center gap-2">
+            <h2 class="h6 fw-bold mb-0">Security</h2>
+            <button type="submit" name="settings_section" value="security" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-save me-1"></i>Lưu mục này
+            </button>
+        </div>
         <div class="admin-card-body">
             <div class="row g-3">
                 <div class="col-md-6">
@@ -137,6 +271,8 @@ $sepayWebhookUrl = sepay_webhook_url();
     </div>
 
     <div class="d-flex justify-content-end">
-        <button class="btn btn-primary px-4">Lưu cài đặt</button>
+        <button class="btn btn-primary px-4" name="settings_section" value="all">
+            <i class="fas fa-save me-1"></i>Lưu tất cả
+        </button>
     </div>
 </form>

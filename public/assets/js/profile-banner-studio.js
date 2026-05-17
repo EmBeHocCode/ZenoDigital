@@ -43,6 +43,9 @@
             video_start: document.querySelector('[data-banner-meta-input="video_start"]'),
             video_end: document.querySelector('[data-banner-meta-input="video_end"]'),
         };
+        const profileMedia = window.ZenoxProfileMedia || null;
+        const profileForm = document.querySelector('[data-profile-form]');
+        const uploadUrl = profileForm?.dataset.bannerUploadUrl || '';
 
         if (!bannerInput || !modalElement || !imageBox || !videoBox || !emptyBox || !cropImage || !videoPreview || !startInput || !endInput || !confirmButton || !previewRoot || !previewEmpty || !profileHeader || !window.bootstrap) {
             return;
@@ -52,10 +55,13 @@
 
         const modal = new bootstrap.Modal(modalElement);
         const heightVars = {
-            narrow: { desktop: '184px', mobile: '152px' },
-            standard: { desktop: '220px', mobile: '180px' },
-            tall: { desktop: '276px', mobile: '228px' },
+            narrow: { desktop: '320px', mobile: '220px' },
+            standard: { desktop: '420px', mobile: '280px' },
+            tall: { desktop: '500px', mobile: '340px' },
         };
+        const cropCanvasSize = { width: 1600, height: 760 };
+        const previewCanvasSize = { width: 960, height: 456 };
+        const cropAspectRatio = cropCanvasSize.width / cropCanvasSize.height;
         const defaultMeta = {
             fit_mode: 'cover',
             zoom: 1,
@@ -345,6 +351,48 @@
             }
         };
 
+        const setConfirmBusy = (busy) => {
+            confirmButton.disabled = busy;
+            confirmButton.innerHTML = busy
+                ? '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Đang lưu...'
+                : '<i class="fas fa-check me-1"></i>Xác nhận lưu bìa';
+        };
+
+        const appendMetaFormData = (formData) => {
+            syncMetaInputs();
+            formData.append('banner_fit_mode', metaInputs.fit_mode?.value || defaultMeta.fit_mode);
+            formData.append('banner_zoom', metaInputs.zoom?.value || String(defaultMeta.zoom));
+            formData.append('banner_position_x', metaInputs.position_x?.value || String(defaultMeta.position_x));
+            formData.append('banner_position_y', metaInputs.position_y?.value || String(defaultMeta.position_y));
+            formData.append('banner_height_mode', metaInputs.height_mode?.value || defaultMeta.height_mode);
+            formData.append('banner_video_start', metaInputs.video_start?.value || '0');
+            formData.append('banner_video_end', metaInputs.video_end?.value || '0');
+        };
+
+        const uploadBanner = async(file = null) => {
+            if (!profileMedia || typeof profileMedia.post !== 'function' || !uploadUrl) {
+                throw new Error('Thiếu đường dẫn lưu ảnh bìa.');
+            }
+
+            const formData = new FormData();
+            if (file) {
+                formData.append('banner', file);
+            }
+            appendMetaFormData(formData);
+
+            return profileMedia.post(uploadUrl, formData);
+        };
+
+        const applySavedBanner = (payload, fallback) => {
+            const savedUrl = payload.banner_url || fallback.url;
+            const savedType = payload.banner_type || fallback.type;
+
+            applySuccess = true;
+            bannerInput.value = '';
+            renderHeader(savedUrl, savedType);
+            modal.hide();
+        };
+
         const showMode = (mode) => {
             selectedMode = mode;
             emptyBox.classList.toggle('d-none', !!mode);
@@ -362,8 +410,8 @@
                 }
 
                 const canvas = cropper.getCroppedCanvas({
-                    width: 960,
-                    height: 300,
+                    width: previewCanvasSize.width,
+                    height: previewCanvasSize.height,
                     imageSmoothingEnabled: true,
                     imageSmoothingQuality: 'high',
                 });
@@ -380,8 +428,8 @@
 
             destroyCropper();
             cropper = new Cropper(cropImage, {
-                aspectRatio: 16 / 5,
-                viewMode: 1,
+                aspectRatio: cropAspectRatio,
+                viewMode: 3,
                 dragMode: 'move',
                 autoCropArea: 1,
                 responsive: true,
@@ -623,48 +671,58 @@
                 return;
             }
 
-            confirmButton.disabled = true;
+            setConfirmBusy(true);
 
             if (source.type === 'image' && cropper) {
                 // Persist the cropped banner image, while fit/zoom/position stay in metadata inputs.
                 const canvas = cropper.getCroppedCanvas({
-                    width: 1600,
-                    height: 500,
+                    width: cropCanvasSize.width,
+                    height: cropCanvasSize.height,
                     imageSmoothingEnabled: true,
                     imageSmoothingQuality: 'high',
                 });
 
                 if (!canvas) {
-                    confirmButton.disabled = false;
+                    setConfirmBusy(false);
                     return;
                 }
 
                 canvas.toBlob((blob) => {
-                    confirmButton.disabled = false;
                     if (!blob) {
+                        setConfirmBusy(false);
                         return;
                     }
 
                     const croppedFile = new File([blob], 'banner-cropped.jpg', { type: 'image/jpeg', lastModified: Date.now() });
-                    const transfer = new DataTransfer();
-                    transfer.items.add(croppedFile);
-                    bannerInput.files = transfer.files;
-                    syncMetaInputs();
-                    applySuccess = true;
-
-                    renderHeader(URL.createObjectURL(croppedFile), 'image');
-                    modal.hide();
+                    uploadBanner(croppedFile)
+                        .then((payload) => {
+                            applySavedBanner(payload, { url: URL.createObjectURL(croppedFile), type: 'image' });
+                        })
+                        .catch((error) => {
+                            window.alert(error instanceof Error ? error.message : 'Không thể lưu ảnh bìa.');
+                        })
+                        .finally(() => {
+                            setConfirmBusy(false);
+                        });
                 }, 'image/jpeg', 0.92);
 
                 return;
             }
 
             syncVideoMetaFromFields();
-            syncMetaInputs();
-            applySuccess = true;
-            renderHeader(selectedFile && source.type === 'video' ? URL.createObjectURL(selectedFile) : source.url, source.type);
-            confirmButton.disabled = false;
-            modal.hide();
+            uploadBanner(selectedFile && source.type === 'video' ? selectedFile : null)
+                .then((payload) => {
+                    applySavedBanner(payload, {
+                        url: selectedFile && source.type === 'video' ? URL.createObjectURL(selectedFile) : source.url,
+                        type: source.type,
+                    });
+                })
+                .catch((error) => {
+                    window.alert(error instanceof Error ? error.message : 'Không thể lưu ảnh bìa.');
+                })
+                .finally(() => {
+                    setConfirmBusy(false);
+                });
         });
 
         syncControlState();

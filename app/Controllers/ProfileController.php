@@ -252,46 +252,6 @@ class ProfileController extends Controller
         $this->requirePostWithCsrf('profile?tab=profile');
 
         $userModel = new User($this->config);
-        $currentUser = $userModel->find((int) Auth::id());
-
-        $avatar = $currentUser['avatar'] ?? null;
-        $bannerMedia = $currentUser['banner_media'] ?? null;
-        $bannerMediaType = $currentUser['banner_media_type'] ?? null;
-        $existingBannerMeta = $this->decodeBannerMetadata((string) ($currentUser['banner_media_meta'] ?? ''));
-        if (!empty($_FILES['avatar']['name'])) {
-            $uploaded = secure_upload_image($_FILES['avatar'], 'avatar');
-            if ($uploaded === null) {
-                flash('danger', 'Avatar không hợp lệ hoặc vượt quá giới hạn dung lượng.');
-                redirect('profile?tab=profile');
-            }
-            $avatar = $uploaded;
-        }
-
-        if (!empty($_FILES['banner']['name'])) {
-            $bannerMime = strtolower((string) ($_FILES['banner']['type'] ?? ''));
-            if (str_starts_with($bannerMime, 'image/')) {
-                $uploadedBanner = secure_upload_image($_FILES['banner'], 'banner');
-                if ($uploadedBanner === null) {
-                    flash('danger', 'Ảnh bìa không hợp lệ hoặc vượt quá giới hạn dung lượng.');
-                    redirect('profile?tab=profile');
-                }
-
-                $bannerMedia = $uploadedBanner;
-                $bannerMediaType = 'image';
-            } elseif (str_starts_with($bannerMime, 'video/')) {
-                $uploadedBannerVideo = secure_upload_video($_FILES['banner'], 'banner_video');
-                if ($uploadedBannerVideo === null) {
-                    flash('danger', 'Video bìa không hợp lệ hoặc vượt quá giới hạn dung lượng.');
-                    redirect('profile?tab=profile');
-                }
-
-                $bannerMedia = $uploadedBannerVideo;
-                $bannerMediaType = 'video';
-            } else {
-                flash('danger', 'Banner chỉ hỗ trợ ảnh hoặc video hợp lệ.');
-                redirect('profile?tab=profile');
-            }
-        }
 
         $fullName = sanitize_text((string) ($_POST['full_name'] ?? ''), 120);
         $phone = sanitize_text((string) ($_POST['phone'] ?? ''), 20);
@@ -323,6 +283,106 @@ class ProfileController extends Controller
             redirect('profile?tab=profile');
         }
 
+        $ok = $userModel->updateProfileInfo((int) Auth::id(), [
+            'full_name' => $fullName,
+            'phone' => $phone,
+            'address' => $address,
+            'gender' => $gender,
+            'birth_date' => $birthDate,
+        ]);
+
+        if ($ok) {
+            $this->refreshAuthUser($userModel);
+            clear_old();
+            flash('success', 'Cập nhật hồ sơ thành công.');
+        } else {
+            flash('danger', 'Không thể cập nhật hồ sơ.');
+        }
+
+        redirect('profile?tab=profile');
+    }
+
+    public function updateAvatar(): void
+    {
+        $this->requireAuth();
+
+        if (!is_post()) {
+            $this->jsonResponse(405, ['success' => false, 'message' => 'Phương thức không hợp lệ.']);
+        }
+
+        $file = $_FILES['avatar'] ?? null;
+        if (!is_array($file) || empty($file['name'])) {
+            $this->jsonResponse(422, ['success' => false, 'message' => 'Vui lòng chọn ảnh đại diện.']);
+        }
+
+        $uploaded = secure_upload_image($file, 'avatar');
+        if ($uploaded === null) {
+            $this->jsonResponse(422, ['success' => false, 'message' => 'Avatar không hợp lệ hoặc vượt quá giới hạn dung lượng.']);
+        }
+
+        $userModel = new User($this->config);
+        if (!$userModel->updateAvatar((int) Auth::id(), $uploaded)) {
+            $this->jsonResponse(500, ['success' => false, 'message' => 'Không thể lưu avatar lúc này.']);
+        }
+
+        $this->refreshAuthUser($userModel);
+
+        $this->jsonResponse(200, [
+            'success' => true,
+            'message' => 'Đã lưu ảnh đại diện.',
+            'avatar' => $uploaded,
+            'avatar_url' => base_url('uploads/' . ltrim($uploaded, '/')),
+            'csrf_token' => csrf_token(),
+        ]);
+    }
+
+    public function updateBanner(): void
+    {
+        $this->requireAuth();
+
+        if (!is_post()) {
+            $this->jsonResponse(405, ['success' => false, 'message' => 'Phương thức không hợp lệ.']);
+        }
+
+        $userModel = new User($this->config);
+        $currentUser = $userModel->find((int) Auth::id());
+        if (!$currentUser) {
+            $this->jsonResponse(404, ['success' => false, 'message' => 'Không tìm thấy tài khoản.']);
+        }
+
+        $bannerMedia = $currentUser['banner_media'] ?? null;
+        $bannerMediaType = $currentUser['banner_media_type'] ?? null;
+        $existingBannerMeta = $this->decodeBannerMetadata((string) ($currentUser['banner_media_meta'] ?? ''));
+
+        if (!empty($_FILES['banner']['name'])) {
+            $file = $_FILES['banner'];
+            $bannerMime = strtolower((string) ($file['type'] ?? ''));
+
+            if (str_starts_with($bannerMime, 'image/')) {
+                $uploadedBanner = secure_upload_image($file, 'banner');
+                if ($uploadedBanner === null) {
+                    $this->jsonResponse(422, ['success' => false, 'message' => 'Ảnh bìa không hợp lệ hoặc vượt quá giới hạn dung lượng.']);
+                }
+
+                $bannerMedia = $uploadedBanner;
+                $bannerMediaType = 'image';
+            } elseif (str_starts_with($bannerMime, 'video/')) {
+                $uploadedBannerVideo = secure_upload_video($file, 'banner_video');
+                if ($uploadedBannerVideo === null) {
+                    $this->jsonResponse(422, ['success' => false, 'message' => 'Video bìa không hợp lệ hoặc vượt quá giới hạn dung lượng.']);
+                }
+
+                $bannerMedia = $uploadedBannerVideo;
+                $bannerMediaType = 'video';
+            } else {
+                $this->jsonResponse(422, ['success' => false, 'message' => 'Banner chỉ hỗ trợ ảnh hoặc video hợp lệ.']);
+            }
+        }
+
+        if (trim((string) $bannerMedia) === '' || $this->normalizeBannerMediaType((string) $bannerMediaType) === null) {
+            $this->jsonResponse(422, ['success' => false, 'message' => 'Vui lòng chọn ảnh hoặc video bìa.']);
+        }
+
         $bannerMeta = $this->sanitizeBannerMetadata([
             'fit_mode' => $_POST['banner_fit_mode'] ?? null,
             'zoom' => $_POST['banner_zoom'] ?? null,
@@ -334,28 +394,21 @@ class ProfileController extends Controller
         ], is_string($bannerMediaType) ? $bannerMediaType : null, $existingBannerMeta);
         $bannerMetaPayload = json_encode($bannerMeta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        $ok = $userModel->updateProfile((int) Auth::id(), [
-            'full_name' => $fullName,
-            'phone' => $phone,
-            'address' => $address,
-            'gender' => $gender,
-            'birth_date' => $birthDate,
-            'avatar' => $avatar,
-            'banner_media' => $bannerMedia,
-            'banner_media_type' => $bannerMediaType,
-            'banner_media_meta' => $bannerMetaPayload !== false ? $bannerMetaPayload : null,
-        ]);
-
-        if ($ok) {
-            $updated = $userModel->find((int) Auth::id());
-            Auth::login($updated);
-            clear_old();
-            flash('success', 'Cập nhật hồ sơ thành công.');
-        } else {
-            flash('danger', 'Không thể cập nhật hồ sơ.');
+        if (!$userModel->updateBannerMedia((int) Auth::id(), $bannerMedia, $bannerMediaType, $bannerMetaPayload !== false ? $bannerMetaPayload : null)) {
+            $this->jsonResponse(500, ['success' => false, 'message' => 'Không thể lưu ảnh bìa lúc này.']);
         }
 
-        redirect('profile?tab=profile');
+        $this->refreshAuthUser($userModel);
+
+        $this->jsonResponse(200, [
+            'success' => true,
+            'message' => 'Đã lưu ảnh bìa.',
+            'banner_media' => $bannerMedia,
+            'banner_type' => $bannerMediaType,
+            'banner_url' => base_url('uploads/' . ltrim((string) $bannerMedia, '/')),
+            'banner_meta' => $bannerMeta,
+            'csrf_token' => csrf_token(),
+        ]);
     }
 
     private function decodeBannerMetadata(string $rawMeta): array
@@ -438,6 +491,14 @@ class ProfileController extends Controller
 
     private function jsonResponse(int $statusCode, array $payload): void
     {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+        }
+
+        if (Auth::check() && !isset($payload['csrf_token'])) {
+            $payload['csrf_token'] = csrf_token();
+        }
+
         http_response_code($statusCode);
         echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
@@ -764,15 +825,17 @@ class ProfileController extends Controller
         }
     }
 
-    private function refreshAuthUser(User $userModel): void
+    private function refreshAuthUser(User $userModel): ?array
     {
         $updated = $userModel->find((int) Auth::id());
         if (!$updated) {
-            return;
+            return null;
         }
 
         $updated['session_token'] = (string) (Auth::user()['session_token'] ?? '');
         Auth::login($updated);
+
+        return $updated;
     }
 
     private function isTwoFactorEnabled(array $user): bool

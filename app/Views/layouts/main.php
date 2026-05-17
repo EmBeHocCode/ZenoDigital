@@ -18,6 +18,7 @@ $homePopupCssVersion = @filemtime($publicRoot . DIRECTORY_SEPARATOR . 'assets' .
 $homePopupJsVersion = @filemtime($publicRoot . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'home-popup.js') ?: '1';
 $profileBannerStudioCssVersion = @filemtime($publicRoot . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . 'profile-banner-studio.css') ?: '1';
 $profileBannerStudioJsVersion = @filemtime($publicRoot . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'profile-banner-studio.js') ?: '1';
+$userAccountJsVersion = @filemtime($publicRoot . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'user-account.js') ?: '1';
 $metaTitle = trim((string) ($title ?? $siteName));
 $metaDescription = seo_trim_text((string) ($metaDescription ?? seo_default_description()), 170);
 $canonicalUrl = trim((string) ($canonicalUrl ?? current_url(false)));
@@ -118,7 +119,7 @@ if (isset($structuredData) && is_array($structuredData)) {
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
     <script src="<?= base_url('assets/js/profile-banner-studio.js?v=' . $profileBannerStudioJsVersion) ?>"></script>
-    <script src="<?= base_url('assets/js/user-account.js') ?>"></script>
+    <script src="<?= base_url('assets/js/user-account.js?v=' . $userAccountJsVersion) ?>"></script>
 <?php endif; ?>
 <?php if (!empty($vpsUi)): ?>
     <script src="<?= base_url('assets/js/vps-products.js') ?>"></script>

@@ -14,9 +14,9 @@ $bannerPositionY = max(0, min(100, (float) ($bannerMeta['position_y'] ?? 50)));
 $bannerVideoStart = max(0, (float) ($bannerMeta['video_start'] ?? 0));
 $bannerVideoEnd = max(0, (float) ($bannerMeta['video_end'] ?? 0));
 $bannerHeightMap = [
-    'narrow' => ['desktop' => '184px', 'mobile' => '152px'],
-    'standard' => ['desktop' => '220px', 'mobile' => '180px'],
-    'tall' => ['desktop' => '276px', 'mobile' => '228px'],
+    'narrow' => ['desktop' => '320px', 'mobile' => '220px'],
+    'standard' => ['desktop' => '420px', 'mobile' => '280px'],
+    'tall' => ['desktop' => '500px', 'mobile' => '340px'],
 ];
 $formatBannerCssNumber = static function (float $value): string {
     $formatted = number_format($value, 3, '.', '');
@@ -74,10 +74,10 @@ if (normalize_birth_date((string) ($user['birth_date'] ?? '')) !== null) {
     $completion += 10;
 }
 
-$activeTab = sanitize_text((string) ($_GET['tab'] ?? 'dashboard'), 30);
-$validTabs = ['dashboard', 'profile', 'password', 'security', 'wallet-log', 'activity-log', 'history', 'vps-history', 'domain-history', 'license-history', 'service-history', 'api', 'seller'];
+$activeTab = sanitize_text((string) ($_GET['tab'] ?? 'profile'), 30);
+$validTabs = ['profile', 'password', 'security', 'wallet-log', 'activity-log', 'history', 'vps-history', 'domain-history', 'license-history', 'service-history', 'api', 'seller'];
 if (!in_array($activeTab, $validTabs, true)) {
-    $activeTab = 'dashboard';
+    $activeTab = 'profile';
 }
 
 $twoFactorEnabled = !empty($twoFactorEnabled);
@@ -305,7 +305,6 @@ $walletPendingStatusUrl = $walletPendingCode !== ''
             </div>
 
             <div class="ua-tabs">
-                <button class="ua-tab <?= $activeTab === 'dashboard' ? 'is-active' : '' ?>" type="button" data-ua-tab="dashboard">Dashboard</button>
                 <button class="ua-tab <?= $activeTab === 'profile' ? 'is-active' : '' ?>" type="button" data-ua-tab="profile">Hồ sơ</button>
                 <button class="ua-tab <?= $activeTab === 'password' ? 'is-active' : '' ?>" type="button" data-ua-tab="password">Đổi mật khẩu</button>
                 <button class="ua-tab <?= $activeTab === 'security' ? 'is-active' : '' ?>" type="button" data-ua-tab="security">Bảo mật 2FA</button>
@@ -316,13 +315,6 @@ $walletPendingStatusUrl = $walletPendingCode !== ''
                 <button class="ua-tab <?= $activeTab === 'domain-history' ? 'is-active' : '' ?>" type="button" data-ua-tab="domain-history">Lịch sử mua miền</button>
                 <button class="ua-tab <?= $activeTab === 'license-history' ? 'is-active' : '' ?>" type="button" data-ua-tab="license-history">Lịch sử mua License</button>
                 <button class="ua-tab <?= $activeTab === 'service-history' ? 'is-active' : '' ?>" type="button" data-ua-tab="service-history">Lịch sử đặt dịch vụ</button>
-            </div>
-        </div>
-
-        <div class="ua-section <?= $activeTab === 'dashboard' ? 'is-visible' : '' ?> mt-4" data-ua-section="dashboard">
-            <div class="ua-card p-4">
-                <h3 class="h5 fw-bold mb-2">Tổng quan tài khoản</h3>
-                <p class="text-secondary mb-0">Chọn tab phía trên để truy cập nhanh hồ sơ, bảo mật và lịch sử giao dịch.</p>
             </div>
         </div>
 
@@ -375,7 +367,14 @@ $walletPendingStatusUrl = $walletPendingCode !== ''
                             </div>
                         </div>
 
-                        <form method="post" enctype="multipart/form-data" action="<?= base_url('profile/update') ?>">
+                        <form
+                            method="post"
+                            enctype="multipart/form-data"
+                            action="<?= base_url('profile/update') ?>"
+                            data-profile-form
+                            data-avatar-upload-url="<?= base_url('profile/avatar') ?>"
+                            data-banner-upload-url="<?= base_url('profile/banner') ?>"
+                        >
                             <?= csrf_field() ?>
                             <input type="file" class="d-none" name="avatar" accept="image/*" id="ua-avatar-input" data-avatar-crop-input>
                             <input type="file" class="d-none" name="banner" accept="image/*,video/*" id="ua-banner-input" data-banner-editor-input>
@@ -1091,7 +1090,7 @@ $walletPendingStatusUrl = $walletPendingCode !== ''
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
                 <button type="button" class="btn btn-primary" data-avatar-crop-confirm>
-                    <i class="fas fa-crop-simple me-1"></i>Xác nhận cắt ảnh
+                    <i class="fas fa-crop-simple me-1"></i>Xác nhận lưu ảnh
                 </button>
             </div>
         </div>
@@ -1112,7 +1111,7 @@ $walletPendingStatusUrl = $walletPendingCode !== ''
                             <div>
                                 <span class="ua-banner-editor-kicker">Banner Studio</span>
                                 <h6 class="mb-1">Tùy chỉnh vùng hiển thị và cảm giác banner</h6>
-                                <p class="text-secondary small mb-0">Bạn có thể thay media mới, cắt ảnh, căn vị trí và preview trước khi lưu hồ sơ.</p>
+                                <p class="text-secondary small mb-0">Bạn có thể thay media mới, cắt ảnh, căn vị trí và lưu ngay khi xác nhận.</p>
                             </div>
                             <button type="button" class="btn btn-outline-primary btn-sm" data-banner-editor-select-media>
                                 <i class="fas fa-photo-film me-1"></i>Chọn ảnh / video
@@ -1157,7 +1156,7 @@ $walletPendingStatusUrl = $walletPendingCode !== ''
                             <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                                 <div>
                                     <span class="ua-banner-editor-kicker">Preview</span>
-                                    <h6 class="mb-0">Banner sau khi lưu</h6>
+                                <h6 class="mb-0">Banner sau khi xác nhận</h6>
                                 </div>
                                 <span class="badge text-bg-light">Realtime</span>
                             </div>
@@ -1231,10 +1230,10 @@ $walletPendingStatusUrl = $walletPendingCode !== ''
                 </div>
             </div>
             <div class="modal-footer">
-                <div class="small text-secondary me-auto">Sau khi áp dụng banner, nhớ bấm <strong>Cập nhật</strong> ở form hồ sơ để lưu thay đổi.</div>
+                <div class="small text-secondary me-auto">Bấm xác nhận là ảnh bìa được lưu ngay, không cần bấm nút <strong>Cập nhật</strong> bên ngoài.</div>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
                 <button type="button" class="btn btn-primary" data-banner-editor-confirm>
-                    <i class="fas fa-check me-1"></i>Áp dụng banner
+                    <i class="fas fa-check me-1"></i>Xác nhận lưu bìa
                 </button>
             </div>
         </div>

@@ -25,6 +25,8 @@ return [
     ['GET', '/profile', 'ProfileController@index'],
     ['GET', '/profile/wallet/status/{code}', 'ProfileController@walletStatus'],
     ['POST', '/profile/update', 'ProfileController@update'],
+    ['POST', '/profile/avatar', 'ProfileController@updateAvatar'],
+    ['POST', '/profile/banner', 'ProfileController@updateBanner'],
     ['POST', '/profile/wallet/deposit', 'ProfileController@depositWallet'],
     ['POST', '/profile/password', 'ProfileController@changePassword'],
     ['POST', '/profile/2fa/enable', 'ProfileController@enableTwoFactor'],

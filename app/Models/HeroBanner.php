@@ -153,11 +153,38 @@ class HeroBanner extends Model
                 deleted_at DATETIME NULL,
                 INDEX idx_hero_banners_status_order (status, display_order, id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            $this->ensureColumn('subtitle', 'ALTER TABLE hero_banners ADD COLUMN subtitle VARCHAR(500) NULL AFTER title');
+            $this->ensureColumn('image_path', "ALTER TABLE hero_banners ADD COLUMN image_path VARCHAR(255) NOT NULL DEFAULT '' AFTER subtitle");
+            $this->ensureColumn('link_label', 'ALTER TABLE hero_banners ADD COLUMN link_label VARCHAR(80) NULL AFTER image_path');
+            $this->ensureColumn('link_url', 'ALTER TABLE hero_banners ADD COLUMN link_url VARCHAR(500) NULL AFTER link_label');
+            $this->ensureColumn('display_order', 'ALTER TABLE hero_banners ADD COLUMN display_order INT NOT NULL DEFAULT 0 AFTER link_url');
+            $this->ensureColumn('status', "ALTER TABLE hero_banners ADD COLUMN status ENUM('active','inactive') NOT NULL DEFAULT 'active' AFTER display_order");
+            $this->ensureColumn('created_at', 'ALTER TABLE hero_banners ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER status');
+            $this->ensureColumn('updated_at', 'ALTER TABLE hero_banners ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER created_at');
+            $this->ensureColumn('deleted_at', 'ALTER TABLE hero_banners ADD COLUMN deleted_at DATETIME NULL AFTER updated_at');
         } catch (\Throwable $exception) {
             security_log('Khong the khoi tao bang hero_banners', ['error' => $exception->getMessage()]);
         }
 
         self::$schemaReady = true;
+    }
+
+    private function ensureColumn(string $column, string $alterSql): void
+    {
+        try {
+            $stmt = $this->db->prepare('SHOW COLUMNS FROM hero_banners LIKE :column');
+            $stmt->execute(['column' => $column]);
+
+            if (!$stmt->fetch()) {
+                $this->db->exec($alterSql);
+            }
+        } catch (\Throwable $exception) {
+            security_log('Khong the bo sung cot hero_banners', [
+                'column' => $column,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     private function seedDefaultSlides(): void

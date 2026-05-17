@@ -101,6 +101,38 @@ class User extends Model
         return $stmt->execute($payload);
     }
 
+    public function updateProfileInfo(int $id, array $data): bool
+    {
+        $payload = array_merge([
+            'gender' => 'unknown',
+            'birth_date' => null,
+        ], $data);
+        $payload['id'] = $id;
+
+        $stmt = $this->db->prepare('UPDATE users SET full_name = :full_name, phone = :phone, address = :address, gender = :gender, birth_date = :birth_date, updated_at = NOW() WHERE id = :id');
+        return $stmt->execute($payload);
+    }
+
+    public function updateAvatar(int $id, ?string $avatar): bool
+    {
+        $stmt = $this->db->prepare('UPDATE users SET avatar = :avatar, updated_at = NOW() WHERE id = :id');
+        return $stmt->execute([
+            'id' => $id,
+            'avatar' => $avatar,
+        ]);
+    }
+
+    public function updateBannerMedia(int $id, ?string $media, ?string $mediaType, ?string $mediaMeta): bool
+    {
+        $stmt = $this->db->prepare('UPDATE users SET banner_media = :banner_media, banner_media_type = :banner_media_type, banner_media_meta = :banner_media_meta, updated_at = NOW() WHERE id = :id');
+        return $stmt->execute([
+            'id' => $id,
+            'banner_media' => $media,
+            'banner_media_type' => $mediaType,
+            'banner_media_meta' => $mediaMeta,
+        ]);
+    }
+
     public function updatePassword(int $id, string $password): bool
     {
         $stmt = $this->db->prepare('UPDATE users SET password = :password, updated_at = NOW() WHERE id = :id');

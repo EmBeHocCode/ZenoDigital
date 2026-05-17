@@ -1,4 +1,59 @@
 (() => {
+    const profileMedia = (() => {
+        const profileForm = () => document.querySelector('[data-profile-form]');
+        const csrfInput = () => profileForm()?.querySelector('input[name="_csrf"]') || document.querySelector('input[name="_csrf"]');
+
+        const csrfToken = () => csrfInput()?.value || '';
+
+        const syncCsrfToken = (token) => {
+            if (!token) {
+                return;
+            }
+
+            document.querySelectorAll('input[name="_csrf"]').forEach((input) => {
+                input.value = token;
+            });
+        };
+
+        const post = async(url, formData) => {
+            const token = csrfToken();
+            if (token && !formData.has('_csrf')) {
+                formData.append('_csrf', token);
+            }
+
+            const response = await window.fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(token ? { 'X-CSRF-Token': token } : {}),
+                },
+                credentials: 'same-origin',
+                cache: 'no-store',
+            });
+
+            const payload = await response.json().catch(() => null);
+            if (payload && payload.csrf_token) {
+                syncCsrfToken(payload.csrf_token);
+            }
+
+            if (!response.ok || !payload || payload.success !== true) {
+                throw new Error(payload && payload.message ? payload.message : 'Không thể lưu thay đổi lúc này.');
+            }
+
+            return payload;
+        };
+
+        return {
+            form: profileForm,
+            post,
+            syncCsrfToken,
+        };
+    })();
+
+    window.ZenoxProfileMedia = profileMedia;
+
     const initAvatarCropper = () => {
         const avatarInput = document.querySelector('[data-avatar-crop-input]');
         const avatarTriggerButton = document.querySelector('[data-avatar-editor-trigger]');
@@ -11,6 +66,7 @@
         }
 
         const modal = new bootstrap.Modal(modalElement);
+        const uploadUrl = profileMedia.form()?.dataset.avatarUploadUrl || '';
         let cropper = null;
         let objectUrl = '';
         let croppedApplied = false;
@@ -79,10 +135,24 @@
             }
         });
 
+        const setConfirmBusy = (busy) => {
+            confirmButton.disabled = busy;
+            confirmButton.innerHTML = busy
+                ? '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Đang lưu...'
+                : '<i class="fas fa-crop-simple me-1"></i>Xác nhận lưu ảnh';
+        };
+
         confirmButton.addEventListener('click', () => {
             if (!cropper) {
                 return;
             }
+
+            if (!uploadUrl) {
+                window.alert('Thiếu đường dẫn lưu avatar.');
+                return;
+            }
+
+            setConfirmBusy(true);
 
             const canvas = cropper.getCroppedCanvas({
                 width: 512,
@@ -97,21 +167,32 @@
 
             canvas.toBlob((blob) => {
                 if (!blob) {
+                    setConfirmBusy(false);
                     return;
                 }
 
                 const croppedFile = new File([blob], 'avatar-cropped.jpg', { type: 'image/jpeg', lastModified: Date.now() });
-                const transfer = new DataTransfer();
-                transfer.items.add(croppedFile);
-                avatarInput.files = transfer.files;
-                croppedApplied = true;
+                const formData = new FormData();
+                formData.append('avatar', croppedFile);
 
-                const previewUrl = URL.createObjectURL(croppedFile);
-                document.querySelectorAll('[data-avatar-preview]').forEach((image) => {
-                    image.src = previewUrl;
-                });
+                profileMedia.post(uploadUrl, formData)
+                    .then((payload) => {
+                        croppedApplied = true;
+                        avatarInput.value = '';
 
-                modal.hide();
+                        const previewUrl = payload.avatar_url || URL.createObjectURL(croppedFile);
+                        document.querySelectorAll('[data-avatar-preview]').forEach((image) => {
+                            image.src = previewUrl;
+                        });
+
+                        modal.hide();
+                    })
+                    .catch((error) => {
+                        window.alert(error instanceof Error ? error.message : 'Không thể lưu avatar.');
+                    })
+                    .finally(() => {
+                        setConfirmBusy(false);
+                    });
             }, 'image/jpeg', 0.92);
         });
     };
@@ -556,14 +637,14 @@
     };
 
     if (tabTriggers.length > 0 && sections.length > 0) {
-        let initial = 'dashboard';
+        let initial = 'profile';
         const params = new URLSearchParams(window.location.search);
         if (params.has('tab')) {
             initial = params.get('tab') || initial;
         }
 
         if (!document.querySelector(`[data-ua-section="${initial}"]`)) {
-            initial = 'dashboard';
+            initial = 'profile';
         }
 
         activateSection(initial);

@@ -5,7 +5,7 @@ use App\Models\Category;
 use App\Services\ModuleHealthGuardService;
 
 $uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$activeTab = sanitize_text((string) ($_GET['tab'] ?? 'dashboard'), 30);
+$activeTab = sanitize_text((string) ($_GET['tab'] ?? 'profile'), 30);
 $selectedCategoryId = (int) sanitize_text((string) ($_GET['category_id'] ?? ''), 10);
 $siteName = app_site_name();
 $siteLogo = trim((string) app_setting('site_logo', ''));
@@ -217,12 +217,7 @@ $isAffiliateActive = str_contains($uriPath, '/profile') && $activeTab === 'selle
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item <?= str_contains($uriPath, '/profile') && $activeTab === 'dashboard' ? 'active' : '' ?>" href="<?= base_url('profile?tab=dashboard') ?>">
-                                    <i class="fas fa-chart-line"></i><span>Dashboard</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item <?= str_contains($uriPath, '/profile') && $activeTab === 'profile' ? 'active' : '' ?>" href="<?= base_url('profile?tab=profile') ?>">
+                                <a class="dropdown-item <?= str_contains($uriPath, '/profile') && $activeTab === 'profile' ? 'active' : '' ?>" href="<?= base_url('profile') ?>">
                                     <i class="fas fa-id-card"></i><span>Tài khoản</span>
                                 </a>
                             </li>

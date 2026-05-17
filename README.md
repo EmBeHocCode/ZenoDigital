@@ -1,18 +1,24 @@
 # ZenoxDigital
 
-ZenoxDigital là dự án webshop dịch vụ số theo hướng cloud hosting, xây dựng bằng PHP MVC thuần, PDO, Bootstrap 5 và JavaScript thuần. Repo này được dùng để học lập trình nghiêm túc, làm tài liệu đối chiếu khi phát triển đồ án, và làm nền tảng thực hành triển khai hệ thống thực tế.
+ZenoxDigital is a PHP MVC web application for selling Cloud VPS, Cloud Server, and digital services. The project includes a public storefront, user account area, wallet flow, admin dashboard, banner management, footer/settings management, security features, and AI-assisted customer/admin workflows.
 
-> Đây không phải landing page demo đơn giản. Dự án có storefront, backoffice, ví điện tử, quản trị dữ liệu, bảo mật, AI chatbot/Copilot, SQL Manager và các tài liệu triển khai AI đi kèm.
+ZenoxDigital là ứng dụng web PHP MVC dùng để kinh doanh Cloud VPS, Cloud Server và các dịch vụ số. Dự án có storefront cho khách hàng, khu vực tài khoản, ví điện tử, dashboard quản trị, quản lý banner, quản lý footer/settings, bảo mật và các tính năng hỗ trợ AI.
 
-## Mục Tiêu
+## Tiếng Việt
 
-- Học cách xây dựng sản phẩm web hoàn chỉnh bằng PHP MVC.
-- Hiểu luồng dữ liệu từ route, controller, model, view đến database.
-- Thực hành quản trị sản phẩm, đơn hàng, user, coupon, feedback và cấu hình hệ thống.
-- Tích hợp AI vào sản phẩm theo hướng có kiểm soát, không bịa dữ liệu.
-- Có nền tảng để phát triển thành đồ án hoặc portfolio kỹ thuật.
+### Tổng quan
 
-## Công Nghệ
+ZenoxDigital được xây dựng theo hướng dễ học, dễ sửa và dễ triển khai lên hosting hoặc VPS. Dự án không phụ thuộc framework lớn; luồng xử lý được chia rõ theo mô hình MVC:
+
+- `public/index.php`: entry point của ứng dụng.
+- `config/routes.php`: khai báo route.
+- `app/Controllers`: xử lý request.
+- `app/Models`: thao tác database bằng PDO.
+- `app/Views`: giao diện PHP view.
+- `app/Services`: nghiệp vụ phức tạp như AI, thanh toán, import/export và guardrail.
+- `database`: schema và migration SQL.
+
+### Công nghệ
 
 - PHP 8.x
 - MySQL hoặc MariaDB
@@ -20,182 +26,57 @@ ZenoxDigital là dự án webshop dịch vụ số theo hướng cloud hosting, 
 - Bootstrap 5
 - JavaScript thuần
 - Apache/XAMPP hoặc VPS Ubuntu + Apache/Nginx
-- AI bridge bên ngoài qua HTTP JSON
+- AI Bridge qua HTTP JSON
 
-## Tính Năng Chính
+### Tính năng chính
 
-### Storefront
+Storefront:
 
-- Trang chủ ZenoDigital với hero banner/slider.
-- Danh sách sản phẩm dịch vụ số/cloud/VPS.
-- Trang chi tiết sản phẩm.
-- Đăng ký, đăng nhập, hồ sơ người dùng.
-- Ví điện tử và lịch sử giao dịch.
-- Checkout sản phẩm.
-- Feedback nhanh từ header và widget AI.
+- Trang chủ Cloud VPS/Cloud Server.
+- Hero banner slider lấy dữ liệu từ database.
+- Danh sách gói VPS, lọc danh mục và xem chi tiết sản phẩm.
+- FAQ, affiliate, reseller và footer CTA.
+- Đăng ký, đăng nhập, quên mật khẩu.
+- Hồ sơ người dùng, avatar, ảnh bìa và bảo mật tài khoản.
+- Ví điện tử, lịch sử giao dịch và checkout.
+- Chatbot AI hỗ trợ khách hàng và feedback nhanh.
 
-### Admin Backoffice
+Admin:
 
-- Dashboard quản trị.
-- Quản lý sản phẩm.
-- Quản lý danh mục.
-- Quản lý banner trang chủ.
-- Quản lý đơn hàng.
-- Quản lý người dùng.
-- Quản lý coupon.
-- Quản lý rank/chương trình thưởng.
-- Quản lý feedback khách hàng.
-- Quản lý thanh toán/ví.
-- Cài đặt hệ thống.
-- Audit log.
-- SQL Manager.
+- Dashboard tổng quan.
+- Quản lý sản phẩm, danh mục và banner.
+- Quản lý đơn hàng, user, thanh toán, coupon và rank.
+- Quản lý feedback, audit log và SQL Manager.
+- Quản lý thông tin footer/site settings trong dashboard.
+- Admin AI Copilot hỗ trợ tóm tắt và gợi ý vận hành.
 
-### SQL Manager
+Bảo mật:
 
-SQL Manager được thiết kế giống database client hiện đại:
+- CSRF token cho form POST.
+- PDO prepared statements.
+- Password hashing.
+- Session hardening.
+- Rate limiting.
+- Phân quyền admin/user.
+- 2FA, backup codes và quản lý phiên đăng nhập.
+- Audit log cho thao tác quản trị.
 
-- Database Explorer dạng tree.
-- Browse dữ liệu bảng.
-- Structure/columns/indexes/foreign keys/triggers.
-- SQL console read-only cho truy vấn an toàn.
-- Import SQL/CSV/JSON.
-- Export SQL tương thích phpMyAdmin.
-- Inline edit cell giống Navicat/TablePlus.
-- Resize columns và resize panel.
-- Scroll ngang/dọc riêng trong workspace.
-- Tool sửa lỗi mojibake tiếng Việt trong database.
+### Cài đặt local với XAMPP
 
-Tool sửa dữ liệu lỗi font:
-
-```bash
-C:\xampp\php\php.exe tools\repair_db_mojibake.php
-C:\xampp\php\php.exe tools\repair_db_mojibake.php --fix
-```
-
-## AI Trong Dự Án
-
-AI trong ZenoxDigital là lớp trợ lý có guardrail, không thay backend permission và không tự suy đoán dữ liệu thiếu.
-
-### Customer AI Widget
-
-File chính:
-
-- `app/Controllers/AiController.php`
-- `app/Services/AiBridgeService.php`
-- `app/Services/AiContextBuilder.php`
-- `app/Services/AiGuardService.php`
-- `app/Views/partials/ai_chat_widget.php`
-- `public/assets/js/ai-chat-widget.js`
-- `public/assets/css/ai-chat-widget.css`
-
-Route:
-
-- `POST /ai/chat/customer`
-- `POST /ai/feedback/customer`
-
-Khả năng:
-
-- Trả lời FAQ cơ bản.
-- Tư vấn sản phẩm.
-- Nhận feedback.
-- Hỗ trợ tra cứu đơn/tài khoản trong phạm vi an toàn.
-
-### Admin Meow Copilot
-
-File chính:
-
-- `app/Controllers/Admin/AiController.php`
-- `app/Services/AdminAiIntentService.php`
-- `app/Services/AdminAiMutationService.php`
-- `app/Services/AdminAiSessionService.php`
-- `app/Views/partials/admin_ai_panel.php`
-- `public/assets/js/admin-ai-panel.js`
-- `public/assets/css/admin-ai-panel.css`
-
-Route:
-
-- `POST /admin/ai/chat`
-- `GET /admin/ai/summary`
-- `GET /admin/ai/session`
-- `GET /admin/ai/progress`
-
-Khả năng:
-
-- Tóm tắt dashboard.
-- Xem đơn pending, feedback, coupon, sản phẩm.
-- Gợi ý bán hàng/khuyến mãi có guardrail.
-- Gợi ý capacity/restock khi dữ liệu đủ.
-- Mutation theo luồng `preview -> confirm -> execute`.
-
-### AI Bridge
-
-Repo PHP này không chạy model AI trực tiếp. ZenoxDigital build context và gọi sang AI bridge bên ngoài qua `AI_BRIDGE_URL`.
-
-Cấu hình mẫu:
-
-```env
-AI_ENABLED=true
-AI_PROVIDER=zia-bot-bridge
-AI_BRIDGE_URL=http://127.0.0.1:10001/api/web-chat
-AI_BRIDGE_KEY=your-secret
-AI_CHAT_TIMEOUT=20
-AI_BRIDGE_RETRIES=1
-AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
-AI_CUSTOMER_SESSION_PREFIX=customer-web
-AI_ADMIN_SESSION_PREFIX=admin-dashboard
-```
-
-Nếu bridge chưa chạy, hệ thống có thể dùng `local-fallback` để test UI, route, session và guardrail.
-
-## Kiến Trúc Thư Mục
-
-```text
-app/
-  Controllers/          Controller public
-  Controllers/Admin/    Controller admin
-  Core/                 App, Controller, Model, Database, Auth
-  Helpers/              Helper dùng chung
-  Models/               Model PDO
-  Services/             Business service, AI service, import/export service
-  Views/                View PHP
-config/
-  config.php            Cấu hình app/database/security
-  routes.php            Route map
-database/
-  schema.sql            Schema chính + seed
-  *.sql                 Migration bổ sung
-docs/
-  README_AI.md
-  AI_PORTING_GUIDE.md
-  AI_FEATURE_PHASES_CHECKLIST.md
-  AI_CONTEXT_MAP.md
-  AI_TASK_TEMPLATE.md
-  AI_IMPLEMENTATION_STATUS.md
-public/
-  index.php             Entry point
-  assets/css            CSS frontend/admin
-  assets/js             JavaScript frontend/admin
-  assets/images         Ảnh tĩnh
-tools/
-  repair_db_mojibake.php
-```
-
-## Cài Đặt Local Bằng XAMPP
-
-### 1. Clone repo
+1. Clone repo:
 
 ```bash
 git clone https://github.com/EmBeHocCode/ZenoxDigital.git
 cd ZenoxDigital
 ```
 
-### 2. Tạo file `.env`
+2. Tạo file cấu hình:
 
 ```bash
 copy .env.example .env
 ```
 
-Sửa các biến quan trọng:
+3. Sửa `.env` theo máy local:
 
 ```env
 APP_ENV=local
@@ -210,218 +91,271 @@ DB_PASS=
 DB_CHARSET=utf8mb4
 ```
 
-Không commit `.env` thật lên GitHub.
-
-### 3. Tạo database
-
-Mở phpMyAdmin hoặc MySQL CLI, import:
+4. Tạo database `digital_market`, sau đó import:
 
 ```text
 database/schema.sql
 ```
 
-Nếu cần dữ liệu/migration mới, chạy thêm:
+Nếu cần cập nhật các tính năng bổ sung, chạy thêm các migration:
 
 ```text
 database/20260328_add_cloud_products.sql
 database/20260422_add_phase67_product_columns.sql
 database/20260514_create_hero_banners.sql
 database/20260514_add_student_vps_products.sql
+database/20260515_footer_settings.sql
 ```
 
-### 4. Chạy app
-
-Với XAMPP:
+5. Mở website:
 
 ```text
 http://localhost/ZenoxDigital/public
 ```
 
-Admin:
+### Cấu hình upload
+
+Thư mục upload mặc định:
 
 ```text
-http://localhost/ZenoxDigital/public/admin
+public/uploads
 ```
 
-## Tài Khoản Và Phân Quyền
+Ảnh slide/banner landing page:
 
-Schema có bảng:
-
-- `roles`
-- `users`
-- `user_sessions`
-- `user_login_activities`
-- `user_backup_codes`
-
-Phân quyền admin/staff được xử lý trong:
-
-- `app/Core/Auth.php`
-- `app/Views/partials/admin_sidebar.php`
-- các controller trong `app/Controllers/Admin`
-
-Nếu quên mật khẩu admin khi học local, có thể reset bằng SQL hoặc dùng màn admin user nếu còn tài khoản quản trị khác.
-
-## Database
-
-Các bảng chính:
-
-- `users`
-- `roles`
-- `categories`
-- `products`
-- `product_images`
-- `orders`
-- `order_items`
-- `wallet_transactions`
-- `coupons`
-- `user_rank_coupons`
-- `customer_feedback`
-- `ai_chat_sessions`
-- `ai_chat_messages`
-- `settings`
-- `admin_audit_logs`
-- `hero_banners`
-
-Database dùng:
-
-```sql
-CHARACTER SET utf8mb4
-COLLATE utf8mb4_unicode_ci
+```text
+public/assets/images/slides
 ```
 
-## Bảo Mật
+Database chỉ nên lưu tên file hoặc đường dẫn tương đối, không lưu đường dẫn tuyệt đối trên Windows.
 
-Dự án đã có các lớp bảo vệ cơ bản:
+### AI Bridge
 
-- CSRF token.
+ZenoxDigital không chạy model AI trực tiếp trong PHP. Ứng dụng build context và gọi sang AI bridge thông qua HTTP.
+
+Cấu hình mẫu:
+
+```env
+AI_ENABLED=true
+AI_PROVIDER=bridge
+AI_BRIDGE_URL=http://127.0.0.1:10001/api/web-chat
+AI_BRIDGE_KEY=your-secret
+AI_CHAT_TIMEOUT=20
+AI_BRIDGE_RETRIES=1
+AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
+```
+
+Nếu bridge chưa chạy, có thể bật local fallback để test giao diện, route, session và guardrail.
+
+### Triển khai lên hosting/VPS
+
+- Upload source lên hosting hoặc VPS.
+- Trỏ document root về `public`.
+- Tạo database và import `database/schema.sql`.
+- Tạo `.env` riêng cho production.
+- Tắt debug trên production:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_HTTPS_ONLY=true
+```
+
+- Đảm bảo các thư mục runtime có quyền ghi:
+
+```text
+public/uploads
+storage/sessions
+storage/cli-sessions
+storage/admin-ai/cache
+storage/admin-ai/progress
+```
+
+### Lưu ý bảo mật
+
+- Không commit file `.env`.
+- Không đưa API key, database password hoặc OAuth secret lên GitHub.
+- Đổi `APP_KEY` khi triển khai production.
+- Sao lưu database trước khi chạy migration trên server thật.
+- Chỉ cấp quyền admin cho tài khoản tin cậy.
+
+## English
+
+### Overview
+
+ZenoxDigital is a lightweight PHP MVC application for Cloud VPS, Cloud Server, and digital-service commerce. It is designed to be easy to learn, easy to maintain, and practical enough for local development, shared hosting, or VPS deployment.
+
+Main structure:
+
+- `public/index.php`: application entry point.
+- `config/routes.php`: route definitions.
+- `app/Controllers`: request handling.
+- `app/Models`: PDO-based database models.
+- `app/Views`: PHP views and layouts.
+- `app/Services`: business logic, AI services, payment services, import/export, and guardrails.
+- `database`: schema and SQL migrations.
+
+### Tech Stack
+
+- PHP 8.x
+- MySQL or MariaDB
+- PDO
+- Bootstrap 5
+- Vanilla JavaScript
+- Apache/XAMPP or Ubuntu VPS with Apache/Nginx
+- External AI Bridge over HTTP JSON
+
+### Key Features
+
+Storefront:
+
+- Cloud VPS / Cloud Server homepage.
+- Database-driven hero banner slider.
+- Product catalog, category filtering, and product detail pages.
+- FAQ, affiliate section, reseller section, and footer CTA.
+- Register, login, and forgot password.
+- User profile, avatar, cover image, account security.
+- Wallet, transaction history, and checkout.
+- Customer AI chatbot and quick feedback flow.
+
+Admin:
+
+- Admin dashboard.
+- Product, category, and banner management.
+- Order, user, payment, coupon, and rank management.
+- Feedback management, audit logs, and SQL Manager.
+- Footer/site settings management from the dashboard.
+- Admin AI Copilot for summaries and operational suggestions.
+
+Security:
+
+- CSRF protection for POST forms.
+- PDO prepared statements.
+- Password hashing.
 - Session hardening.
-- Rate limit cho auth, AI, feedback.
-- Role/scope admin.
-- 2FA TOTP và backup code.
-- Audit log admin.
-- Guardrail AI theo quyền.
-- Không lưu secret trong JavaScript.
+- Rate limiting.
+- Admin/user authorization.
+- 2FA, backup codes, and session management.
+- Audit logs for admin actions.
 
-Các file không được commit:
+### Local Setup With XAMPP
 
-- `.env`
-- file export database trong `database/exports/`
-- file upload trong `public/uploads/`
-- file zip backup local.
-
-## Các Route Quan Trọng
-
-Public:
-
-- `GET /`
-- `GET /products`
-- `GET /products/show/{id}`
-- `POST /products/checkout/{id}`
-- `GET /profile`
-- `POST /profile/wallet/deposit`
-- `POST /ai/chat/customer`
-- `POST /ai/feedback/customer`
-- `POST /feedback/header/store`
-
-Admin:
-
-- `GET /admin`
-- `GET /admin/products`
-- `GET /admin/categories`
-- `GET /admin/banners`
-- `GET /admin/users`
-- `GET /admin/orders`
-- `GET /admin/payments`
-- `GET /admin/settings`
-- `GET /admin/sql-manager`
-- `GET /admin/coupons`
-- `GET /admin/ranks`
-- `GET /admin/audit-logs`
-- `POST /admin/ai/chat`
-
-## Quy Trình Làm Việc Gợi Ý Cho Người Học
-
-1. Đọc `config/routes.php` để hiểu URL đi vào controller nào.
-2. Đọc controller tương ứng trong `app/Controllers`.
-3. Đọc model trong `app/Models` để hiểu query database.
-4. Đọc view trong `app/Views` để hiểu dữ liệu được render ra UI.
-5. Đọc JS/CSS trong `public/assets` để hiểu tương tác frontend.
-6. Với AI, đọc `docs/README_AI.md` và `docs/AI_PORTING_GUIDE.md` trước khi sửa.
-
-## Kiểm Tra Nhanh Trước Khi Push
-
-Lint PHP từng file:
+1. Clone the repository:
 
 ```bash
-C:\xampp\php\php.exe -l app/Controllers/Admin/SqlManagerController.php
-C:\xampp\php\php.exe -l app/Models/SqlManager.php
-C:\xampp\php\php.exe -l app/Views/admin/sql_manager/index.php
+git clone https://github.com/EmBeHocCode/ZenoxDigital.git
+cd ZenoxDigital
 ```
 
-Check JavaScript:
+2. Create environment file:
 
 ```bash
-node --check public/assets/js/admin-sql-manager.js
+copy .env.example .env
 ```
 
-Kiểm tra diff:
+3. Update `.env` for local development:
 
-```bash
-git diff --check
-git status --short
+```env
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost/ZenoxDigital/public
+
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=digital_market
+DB_USER=root
+DB_PASS=
+DB_CHARSET=utf8mb4
 ```
 
-## Deploy Lên VPS
-
-Luồng deploy cơ bản:
-
-1. Clone repo lên VPS.
-2. Tạo `.env` production.
-3. Import database.
-4. Trỏ web server vào thư mục `public`.
-5. Cấp quyền ghi cho thư mục runtime/upload nếu cần.
-6. Bật HTTPS.
-7. Cấu hình AI bridge nếu dùng AI thật.
-8. Kiểm tra `/admin`, `/products`, `/ai/chat/customer`.
-
-Ví dụ Apache/Nginx cần đặt document root:
+4. Create the `digital_market` database and import:
 
 ```text
-/path/to/ZenoxDigital/public
+database/schema.sql
 ```
 
-## Roadmap Đề Xuất
+Optional migrations:
 
-- Hoàn thiện dữ liệu thật cho cost/capacity/stock.
-- Thêm test tự động cho service quan trọng.
-- Tách migration rõ hơn theo version.
-- Hoàn thiện báo cáo điều hành AI phase 8.
-- Tối ưu phân quyền admin theo từng module.
-- Chuẩn hóa quy trình deploy 24/7 bằng Docker Compose.
+```text
+database/20260328_add_cloud_products.sql
+database/20260422_add_phase67_product_columns.sql
+database/20260514_create_hero_banners.sql
+database/20260514_add_student_vps_products.sql
+database/20260515_footer_settings.sql
+```
 
-## Tài Liệu Liên Quan
+5. Open the app:
 
-- `AGENTS.md`
-- `SECURITY_NOTES.md`
-- `docs/README_AI.md`
-- `docs/AI_PORTING_GUIDE.md`
-- `docs/AI_CONTEXT_MAP.md`
-- `docs/AI_TASK_TEMPLATE.md`
-- `docs/AI_IMPLEMENTATION_STATUS.md`
-- `docs/AI_FEATURE_PHASES_CHECKLIST.md`
+```text
+http://localhost/ZenoxDigital/public
+```
 
-## Ghi Chú Học Tập
+### Upload Configuration
 
-Khi dùng repo này để làm đồ án, em nên trình bày theo 5 phần:
+Default upload directory:
 
-1. Bài toán và mục tiêu hệ thống.
-2. Kiến trúc MVC và database.
-3. Các phân hệ người dùng/admin.
-4. Bảo mật, phân quyền, audit.
-5. AI chatbot/Copilot và guardrail dữ liệu.
+```text
+public/uploads
+```
 
-Nếu giáo viên hỏi “AI có tự quyết định dữ liệu không?”, câu trả lời đúng là: không. AI chỉ hỗ trợ tư vấn/gợi ý; backend vẫn kiểm soát quyền, context, dữ liệu và mutation.
+Landing page slide/banner images:
+
+```text
+public/assets/images/slides
+```
+
+The database should store only filenames or relative paths, not absolute Windows paths.
+
+### AI Bridge
+
+ZenoxDigital does not run AI models directly inside PHP. The app builds context and calls an external AI bridge through HTTP.
+
+Example:
+
+```env
+AI_ENABLED=true
+AI_PROVIDER=bridge
+AI_BRIDGE_URL=http://127.0.0.1:10001/api/web-chat
+AI_BRIDGE_KEY=your-secret
+AI_CHAT_TIMEOUT=20
+AI_BRIDGE_RETRIES=1
+AI_BRIDGE_ALLOW_LOCAL_FALLBACK=true
+```
+
+If the bridge is not running, local fallback can be enabled to test UI, routes, sessions, and guardrails.
+
+### Deployment Notes
+
+- Upload the source code to hosting or a VPS.
+- Point the document root to `public`.
+- Create the database and import `database/schema.sql`.
+- Create a production `.env`.
+- Disable debug in production:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_HTTPS_ONLY=true
+```
+
+- Ensure these directories are writable:
+
+```text
+public/uploads
+storage/sessions
+storage/cli-sessions
+storage/admin-ai/cache
+storage/admin-ai/progress
+```
+
+### Security Notes
+
+- Do not commit `.env`.
+- Do not push API keys, database passwords, or OAuth secrets to GitHub.
+- Change `APP_KEY` for production.
+- Back up the database before running migrations on a real server.
+- Grant admin access only to trusted users.
 
 ## License
 
-MIT. Xem file `LICENSE`.
+This project is provided for learning, product prototyping, and practical deployment practice. See `LICENSE` for license details.
